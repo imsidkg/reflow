@@ -1,13 +1,49 @@
+"use client";
 import { LogoIcon } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const router = useRouter();
+  const [formValues, setFormValues] = useState<UserCredentials>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>): void {
+    setFormValues({ ...formValues, [e.target.name]: e.target.value });
+  }
+
+  async function handleSubmit(): Promise<void> {
+    const data = await axios.post(
+      "/api/sign-up",
+      {
+        ...formValues,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    if (data) {
+      router.push("/");
+    }
+  }
   return (
     <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
       <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
         action=""
         className="bg-card m-auto h-fit w-full max-w-sm rounded-[calc(var(--radius)+.125rem)] border p-0.5 shadow-md dark:[--color-muted:var(--color-zinc-900)]"
       >
@@ -76,24 +112,42 @@ export default function LoginPage() {
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="firstname" className="block text-sm">
+                <Label htmlFor="firstName" className="block text-sm">
                   Firstname
                 </Label>
-                <Input type="text" required name="firstname" id="firstname" />
+                <Input
+                  type="text"
+                  required
+                  name="firstName"
+                  id="firstName"
+                  onChange={handleChange}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastname" className="block text-sm">
+                <Label htmlFor="lastName" className="block text-sm">
                   Lastname
                 </Label>
-                <Input type="text" required name="lastname" id="lastname" />
+                <Input
+                  type="text"
+                  required
+                  name="lastName"
+                  id="lastName"
+                  onChange={handleChange}
+                />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email" className="block text-sm">
-                Username
+                Email
               </Label>
-              <Input type="email" required name="email" id="email" />
+              <Input
+                type="email"
+                required
+                name="email"
+                id="email"
+                onChange={handleChange}
+              />
             </div>
 
             <div className="space-y-2">
@@ -106,10 +160,13 @@ export default function LoginPage() {
                 name="pwd"
                 id="pwd"
                 className="input sz-md variant-mixed"
+                onChange={handleChange}
               />
             </div>
 
-            <Button className="w-full">Continue</Button>
+            <Button className="w-full" onClick={handleSubmit}>
+              Continue
+            </Button>
           </div>
         </div>
 

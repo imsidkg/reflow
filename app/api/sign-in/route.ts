@@ -14,14 +14,23 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
     });
 
     if (!user) {
-      return NextResponse.json({
-        message: "User does not exist",
-      });
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-    const token = jwt.sign({ hashedPassword }, "supersecretkey", {
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
+
+    const token = jwt.sign({ userId: user.id }, "supersecretkey", {
       expiresIn: "1h",
     });
     (await cookies()).set("access-token", token, {

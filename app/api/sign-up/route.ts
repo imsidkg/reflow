@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export const POST = async (req: NextRequest, res: NextResponse) => {
   try {
-    const { email, name, password } = await req.json();
+    const { email , firstName, lastName, password } = await req.json();
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -23,8 +23,9 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
     const [user, session] = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
+          firstName,
+          lastName,
           email,
-          name,
           password: hashedPassword,
         },
       });
@@ -41,7 +42,8 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
     return NextResponse.json({
       message: "Data received",
       email,
-      name,
+      firstName , 
+      lastName,
       password,
       token,
     });

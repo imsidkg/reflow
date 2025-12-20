@@ -1,13 +1,49 @@
+"use client";
 import { LogoIcon } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import axios from "axios";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [formValues, setFormValues] = useState({
+    email: "",
+    password: "",
+  });
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>): void {
+    setFormValues({ ...formValues, [e.target.name]: e.target.value });
+  }
+
+  async function handleSubmit(): Promise<void> {
+    const data = await axios.post(
+      "/api/sign-in",
+      {
+        ...formValues,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    if (data) {
+      router.push("/");
+    }
+  }
+
   return (
     <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
       <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
         action=""
         className="bg-card m-auto h-fit w-full max-w-sm rounded-[calc(var(--radius)+.125rem)] border p-0.5 shadow-md dark:[--color-muted:var(--color-zinc-900)]"
       >
@@ -78,7 +114,13 @@ export default function LoginPage() {
               <Label htmlFor="email" className="block text-sm">
                 Username
               </Label>
-              <Input type="email" required name="email" id="email" />
+              <Input
+                type="email"
+                required
+                name="email"
+                id="email"
+                onChange={handleChange}
+              />
             </div>
 
             <div className="space-y-0.5">
@@ -98,9 +140,10 @@ export default function LoginPage() {
               <Input
                 type="password"
                 required
-                name="pwd"
-                id="pwd"
+                name="password"
+                id="password"
                 className="input sz-md variant-mixed"
+                onChange={handleChange}
               />
             </div>
 
