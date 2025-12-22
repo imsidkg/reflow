@@ -6,7 +6,6 @@ import { createSession, setAuthCookie } from "@/lib/auth";
 export const POST = async (req: NextRequest) => {
   try {
     const { email, firstName, lastName, password } = await req.json();
-    console.log("Received data:", { email, firstName, lastName, password });
 
     if (!email || !firstName || !lastName || !password) {
       return NextResponse.json(

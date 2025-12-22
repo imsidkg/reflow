@@ -7,9 +7,12 @@ import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAppDispatch } from "@/redux/hooks";
+import { setProfile } from "@/redux/slices/profile";
 
 export default function LoginPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [formValues, setFormValues] = useState({
     email: "",
     password: "",
@@ -32,6 +35,17 @@ export default function LoginPage() {
         withCredentials: true,
       }
     );
+
+    dispatch(
+      setProfile({
+        id: data.data.user.id,
+        email: data.data.user.email,
+        firstName: data.data.user.firstName,
+        lastName: data.data.user.lastName,
+        image: null,
+      })
+    );
+
     if (data) {
       router.push("/");
     }
