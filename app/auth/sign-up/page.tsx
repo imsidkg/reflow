@@ -151,20 +151,20 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pwd" className="text-sm">
+              <Label htmlFor="password" className="text-sm">
                 Password
               </Label>
               <Input
                 type="password"
                 required
-                name="pwd"
-                id="pwd"
+                name="password"
+                id="password"
                 className="input sz-md variant-mixed"
                 onChange={handleChange}
               />
             </div>
 
-            <Button className="w-full" onClick={handleSubmit}>
+            <Button className="w-full" type="submit">
               Continue
             </Button>
           </div>

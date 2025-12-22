@@ -6,6 +6,7 @@ import { createSession, setAuthCookie } from "@/lib/auth";
 export const POST = async (req: NextRequest) => {
   try {
     const { email, firstName, lastName, password } = await req.json();
+    console.log("Received data:", { email, firstName, lastName, password });
 
     if (!email || !firstName || !lastName || !password) {
       return NextResponse.json(
@@ -27,28 +28,24 @@ export const POST = async (req: NextRequest) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [user, { session, token }] = await prisma.$transaction(
-      async (tx) => {
-        const newUser = await tx.user.create({
-          data: {
-            firstName,
-            lastName,
-            email,
-            password: hashedPassword,
-          },
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        });
+    // Create user first
+    const user = await prisma.user.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
 
-        const sessionData = await createSession(newUser.id);
-
-        return [newUser, sessionData];
-      }
-    );
+    // Create session after user exists in DB
+    const { token } = await createSession(user.id);
 
     await setAuthCookie(token);
 
