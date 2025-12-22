@@ -24,7 +24,9 @@ export default function Navbar() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const profile = useAppSelector((state) => state.profile);
-  console.log(profile)
+
+  const isInsideProject =
+    pathname.includes("canvas") || pathname.includes("style-guide");
 
   const tabs = [
     {
@@ -69,31 +71,33 @@ export default function Navbar() {
       </div>
 
       <div className="flex items-start justify-center">
-        <div className="flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.08] p-2 backdrop-blur-xl">
-          {tabs.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={[
-                "group inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition",
-                isActiveTab(tab.href)
-                  ? "border border-white/[0.16] bg-white/[0.12] text-white backdrop-blur-sm"
-                  : "border border-transparent text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200",
-              ].join(" ")}
-            >
-              <span
-                className={
+        {isInsideProject && (
+          <div className="flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.08] p-2 backdrop-blur-xl">
+            {tabs.map((tab) => (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={[
+                  "group inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition",
                   isActiveTab(tab.href)
-                    ? "opacity-100"
-                    : "opacity-70 group-hover:opacity-90"
-                }
+                    ? "border border-white/[0.16] bg-white/[0.12] text-white backdrop-blur-sm"
+                    : "border border-transparent text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200",
+                ].join(" ")}
               >
-                {tab.icon}
-              </span>
-              <span>{tab.label}</span>
-            </Link>
-          ))}
-        </div>
+                <span
+                  className={
+                    isActiveTab(tab.href)
+                      ? "opacity-100"
+                      : "opacity-70 group-hover:opacity-90"
+                  }
+                >
+                  {tab.icon}
+                </span>
+                <span>{tab.label}</span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-start justify-end">

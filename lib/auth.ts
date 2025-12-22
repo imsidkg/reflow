@@ -212,7 +212,6 @@ export async function cleanupExpiredSessions(): Promise<number> {
       }
     }
 
-    console.log(`Cleaned up ${deletedCount} expired sessions`);
     return deletedCount;
   } catch (error) {
     console.error("Error cleaning up sessions:", error);
