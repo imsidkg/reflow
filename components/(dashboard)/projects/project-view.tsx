@@ -4,12 +4,19 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { useMemo } from "react";
 import { generateGradientThumbnail } from "@/lib/project-thumbnail";
+import { Trash2 } from "lucide-react";
 
 interface ProjectViewProps {
   projects: Project[];
+  action?: React.ReactNode;
+  onDelete?: (projectId: string) => void;
 }
 
-export default function ProjectView({ projects }: ProjectViewProps) {
+export default function ProjectView({
+  projects,
+  action,
+  onDelete,
+}: ProjectViewProps) {
   const projectThumbnails = useMemo(() => {
     return projects.reduce((acc, project) => {
       acc[project.id] = generateGradientThumbnail();
@@ -17,13 +24,22 @@ export default function ProjectView({ projects }: ProjectViewProps) {
     }, {} as Record<string, string>);
   }, [projects]);
 
+  const handleDelete = (e: React.MouseEvent, projectId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete?.(projectId);
+  };
+
   return (
     <div className="p-8 pt-24">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-white">Your Projects</h1>
-        <p className="text-sm text-zinc-400 mt-1">
-          Manage your design projects and continue where you left off.
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-white">Your Projects</h1>
+          <p className="text-sm text-zinc-400 mt-1">
+            Manage your design projects and continue where you left off.
+          </p>
+        </div>
+        {action}
       </div>
 
       {projects.length === 0 ? (
@@ -47,6 +63,12 @@ export default function ProjectView({ projects }: ProjectViewProps) {
                   alt={project.name}
                   className="w-full h-full object-cover"
                 />
+                <button
+                  onClick={(e) => handleDelete(e, project.id)}
+                  className="absolute top-2 right-2 p-2 rounded-full bg-black/50 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/80"
+                >
+                  <Trash2 className="h-4 w-4 text-white" />
+                </button>
               </div>
               <div className="mt-3">
                 <h3 className="text-sm font-medium text-white group-hover:text-zinc-200 transition-colors">

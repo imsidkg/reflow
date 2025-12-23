@@ -9,48 +9,56 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAppDispatch } from "@/redux/hooks";
 import { setProfile } from "@/redux/slices/profile";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const [isLoading, setIsLoading] = useState(false);
   const [formValues, setFormValues] = useState<UserCredentials>({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
   });
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>): void {
     setFormValues({ ...formValues, [e.target.name]: e.target.value });
   }
-  const dispatch = useAppDispatch();
 
   async function handleSubmit(): Promise<void> {
-    const data = await axios.post(
-      "/api/sign-up",
-      {
-        ...formValues,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
+    setIsLoading(true);
+    try {
+      const data = await axios.post(
+        "/api/sign-up",
+        { ...formValues },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
 
+      dispatch(
+        setProfile({
+          id: data.data.user.id,
+          email: data.data.user.email,
+          firstName: data.data.user.firstName,
+          lastName: data.data.user.lastName,
+          image: null,
+        })
+      );
 
-    dispatch(
-      setProfile({
-        id: data.data.user.id,
-        email: data.data.user.email,
-        firstName: data.data.user.firstName,
-        lastName: data.data.user.lastName,
-        image: null,
-      })
-    );
-    if (data) {
-      router.push("/");
+      toast.success("Account created successfully!");
+      router.push("/dashboard");
+    } catch (error: any) {
+      const message = error.response?.data?.error || "Failed to create account";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   }
+
   return (
     <section className="flex min-h-screen bg-zinc-50 px-4 py-16 md:py-32 dark:bg-transparent">
       <form
@@ -58,7 +66,6 @@ export default function SignupPage() {
           e.preventDefault();
           handleSubmit();
         }}
-        action=""
         className="bg-card m-auto h-fit w-full max-w-sm rounded-[calc(var(--radius)+.125rem)] border p-0.5 shadow-md dark:[--color-muted:var(--color-zinc-900)]"
       >
         <div className="p-8 pb-6">
@@ -84,6 +91,7 @@ export default function SignupPage() {
                   name="firstName"
                   id="firstName"
                   onChange={handleChange}
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -96,6 +104,7 @@ export default function SignupPage() {
                   name="lastName"
                   id="lastName"
                   onChange={handleChange}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -110,6 +119,7 @@ export default function SignupPage() {
                 name="email"
                 id="email"
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
 
@@ -122,13 +132,20 @@ export default function SignupPage() {
                 required
                 name="password"
                 id="password"
-                className="input sz-md variant-mixed"
                 onChange={handleChange}
+                disabled={isLoading}
               />
             </div>
 
-            <Button className="w-full" type="submit">
-              Continue
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                "Continue"
+              )}
             </Button>
           </div>
         </div>
@@ -137,7 +154,7 @@ export default function SignupPage() {
           <p className="text-accent-foreground text-center text-sm">
             Have an account ?
             <Button asChild variant="link" className="px-2">
-              <Link href="#">Sign In</Link>
+              <Link href="/auth/sign-in">Sign In</Link>
             </Button>
           </p>
         </div>

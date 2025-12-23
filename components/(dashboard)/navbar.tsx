@@ -16,6 +16,7 @@ import { clearProfile } from "@/redux/slices/profile";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Palette, LayoutTemplate, LogOut } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -49,8 +50,10 @@ export default function Navbar() {
     try {
       await axios.post("/api/auth/logout", {}, { withCredentials: true });
       dispatch(clearProfile());
+      toast.success("Logged out successfully");
       router.push("/auth/sign-in");
     } catch (error) {
+      toast.error("Failed to logout");
       console.error("Logout failed:", error);
     }
   };
