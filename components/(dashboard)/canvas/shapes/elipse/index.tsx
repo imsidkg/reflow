@@ -1,6 +1,6 @@
 import { EllipseShape } from "@/redux/slices/shapes";
 
-export const Elipse = ({ shape }: { shape: EllipseShape }) => (
+export const Ellipse = ({ shape }: { shape: EllipseShape }) => (
   <div
     className="absolute border-solid pointer-events-none"
     style={{

@@ -1,4 +1,4 @@
-export const ElipsePreview = ({
+export const EllipsePreview = ({
   startWorld,
   currentWorld,
 }: {
