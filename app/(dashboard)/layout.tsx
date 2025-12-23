@@ -1,4 +1,5 @@
-'use client'
+"use client";
+import { Suspense } from "react";
 import Navbar from "@/components/(dashboard)/navbar";
 import { useAppDispatch } from "@/redux/hooks";
 import { setProfile } from "@/redux/slices/profile";
@@ -28,7 +29,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div>
-      <Navbar />
+      <Suspense fallback={<div className="h-16" />}>
+        <Navbar />
+      </Suspense>
       {children}
     </div>
   );
