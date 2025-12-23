@@ -54,7 +54,7 @@ export default function ProjectView({
           {projects.map((project) => (
             <Link
               key={project.id}
-              href={`/dashboard/canvas?project=${project.id}`}
+              href={`/projects/${project.id}/canvas`}
               className="group"
             >
               <div className="relative aspect-[3/2] rounded-lg overflow-hidden border border-white/[0.08] transition-all duration-200 group-hover:border-white/[0.2] group-hover:scale-[1.02]">
