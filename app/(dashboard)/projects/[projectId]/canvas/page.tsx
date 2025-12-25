@@ -10,6 +10,7 @@ import { Text } from "@/components/(dashboard)/canvas/shapes/text";
 import { SelectionOverlay } from "@/components/(dashboard)/canvas/selection";
 import Toolbar from "@/components/(dashboard)/canvas/toolbar";
 import UndoRedoControls from "@/components/(dashboard)/canvas/undo-redo";
+import ResizeHandles from "@/components/(dashboard)/canvas/resize-handles";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
   addRect,
@@ -297,7 +298,7 @@ export default function CanvasPage() {
     if (currentTool === "text") {
       dispatch(pushToHistory(shapes));
       dispatch(addText({ x: startPoint.x, y: startPoint.y }));
-      dispatch(setTool("select")); 
+      dispatch(setTool("select"));
       setIsDrawing(false);
       return;
     }
@@ -524,6 +525,18 @@ export default function CanvasPage() {
             <div key={shape.id}>
               {shapeElement}
               <SelectionOverlay shape={shape} isSelected={isSelected} />
+              {isSelected &&
+                currentTool === "select" &&
+                "w" in shape &&
+                "h" in shape && (
+                  <ResizeHandles
+                    shapeId={shape.id}
+                    x={shape.x}
+                    y={shape.y}
+                    w={shape.w}
+                    h={shape.h}
+                  />
+                )}
             </div>
           );
         })}
