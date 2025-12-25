@@ -9,6 +9,7 @@ import { Line } from "@/components/(dashboard)/canvas/shapes/line";
 import { Text } from "@/components/(dashboard)/canvas/shapes/text";
 import { SelectionOverlay } from "@/components/(dashboard)/canvas/selection";
 import Toolbar from "@/components/(dashboard)/canvas/toolbar";
+import UndoRedoControls from "@/components/(dashboard)/canvas/undo-redo";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
   addRect,
@@ -22,7 +23,15 @@ import {
   clearSelection,
   updateShape,
   deleteSelected,
+  selectAll,
+  removeShape,
+  loadShapes,
 } from "@/redux/slices/shapes";
+import {
+  saveSnapshot,
+  undoSnapshot,
+  redoSnapshot,
+} from "@/redux/slices/history";
 import type { Point } from "@/redux/slices/viewport";
 import {
   screenToWorld,
@@ -44,29 +53,43 @@ export default function CanvasPage() {
   const currentTool = shapesState.tool;
   const selected = shapesState.selected;
   const { scale, translate, mode } = useAppSelector((state) => state.viewport);
+  const history = useAppSelector((state) => state.history);
 
-  // Local drawing state
+  const handleUndo = useCallback(() => {
+    if (history.past.length === 0) return;
+    dispatch(undoSnapshot(shapes));
+    const previousState = history.past[history.past.length - 1];
+    if (previousState) {
+      dispatch(loadShapes(previousState));
+    }
+  }, [dispatch, history.past, shapes]);
+
+  const handleRedo = useCallback(() => {
+    if (history.future.length === 0) return;
+    dispatch(redoSnapshot(shapes));
+    const nextState = history.future[history.future.length - 1];
+    if (nextState) {
+      dispatch(loadShapes(nextState));
+    }
+  }, [dispatch, history.future, shapes]);
+
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState({ x: 0, y: 0 });
   const [currentPoint, setCurrentPoint] = useState({ x: 0, y: 0 });
   const [freeDrawPoints, setFreeDrawPoints] = useState<Point[]>([]);
 
-  // Selection dragging state
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // Space key for panning
   const [isSpacePressed, setIsSpacePressed] = useState(false);
 
   const allShapes = Object.values(shapes.entities).filter(Boolean);
   const selectedIds = Object.keys(selected);
 
-  // Convert screen coordinates to world coordinates
   const getWorldPoint = (e: React.PointerEvent | React.MouseEvent) => {
     return screenToWorld({ x: e.clientX, y: e.clientY }, translate, scale);
   };
 
-  // Calculate preview dimensions
   const getPreviewDimensions = () => {
     const x = Math.min(startPoint.x, currentPoint.x);
     const y = Math.min(startPoint.y, currentPoint.y);
@@ -75,7 +98,6 @@ export default function CanvasPage() {
     return { x, y, w, h };
   };
 
-  // Check if a point is inside a shape
   const hitTest = (worldPoint: Point) => {
     for (let i = allShapes.length - 1; i >= 0; i--) {
       const shape = allShapes[i];
@@ -95,24 +117,20 @@ export default function CanvasPage() {
           return shape.id;
         }
       }
-      // Add more hit tests for other shapes as needed
     }
     return null;
   };
 
-  // POINTER DOWN
   const handlePointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
 
     const worldPoint = getWorldPoint(e);
 
-    // If space is pressed, start panning
     if (isSpacePressed) {
       dispatch(panStart({ screen: { x: e.clientX, y: e.clientY } }));
       return;
     }
 
-    // Select tool - handle selection
     if (currentTool === "select") {
       const hitId = hitTest(worldPoint);
       if (hitId) {
@@ -120,7 +138,6 @@ export default function CanvasPage() {
           dispatch(clearSelection());
           dispatch(selectShape(hitId));
         }
-        // Start dragging
         setIsDragging(true);
         setDragStart(worldPoint);
       } else {
@@ -129,7 +146,15 @@ export default function CanvasPage() {
       return;
     }
 
-    // Drawing tools
+    if (currentTool === "eraser") {
+      const hitId = hitTest(worldPoint);
+      if (hitId) {
+        dispatch(saveSnapshot(shapes)); 
+        dispatch(removeShape(hitId));
+      }
+      return;
+    }
+
     setIsDrawing(true);
     setStartPoint(worldPoint);
     setCurrentPoint(worldPoint);
@@ -139,15 +164,12 @@ export default function CanvasPage() {
     }
   };
 
-  // POINTER MOVE
   const handlePointerMove = (e: React.PointerEvent) => {
-    // Panning with space
     if (mode === "panning" || mode === "shiftPanning") {
       dispatch(panMove({ x: e.clientX, y: e.clientY }));
       return;
     }
 
-    // Dragging selected shapes
     if (isDragging && selectedIds.length > 0) {
       const worldPoint = getWorldPoint(e);
       const dx = worldPoint.x - dragStart.x;
@@ -170,7 +192,6 @@ export default function CanvasPage() {
       return;
     }
 
-    // Drawing
     if (!isDrawing) return;
     const worldPoint = getWorldPoint(e);
     setCurrentPoint(worldPoint);
@@ -180,15 +201,12 @@ export default function CanvasPage() {
     }
   };
 
-  // POINTER UP
   const handlePointerUp = (e: React.PointerEvent) => {
-    // End panning
     if (mode === "panning" || mode === "shiftPanning") {
       dispatch(panEnd());
       return;
     }
 
-    // End dragging
     if (isDragging) {
       setIsDragging(false);
       return;
@@ -244,18 +262,15 @@ export default function CanvasPage() {
     setIsDrawing(false);
   };
 
-  // WHEEL - Zoom and Pan
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       e.preventDefault();
 
-      // Shift + Wheel = horizontal pan
       if (e.shiftKey) {
         dispatch(wheelPan({ dx: -e.deltaY, dy: -e.deltaX }));
         return;
       }
 
-      // Ctrl/Cmd + Wheel = zoom
       if (e.ctrlKey || e.metaKey) {
         dispatch(
           wheelZoom({
@@ -266,13 +281,11 @@ export default function CanvasPage() {
         return;
       }
 
-      // Normal wheel = pan
       dispatch(wheelPan({ dx: -e.deltaX, dy: -e.deltaY }));
     },
     [dispatch]
   );
 
-  // Keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && !isSpacePressed) {
@@ -281,8 +294,21 @@ export default function CanvasPage() {
       }
       if (e.code === "Delete" || e.code === "Backspace") {
         if (selectedIds.length > 0) {
+          dispatch(saveSnapshot(shapes)); 
           dispatch(deleteSelected());
         }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.code === "KeyA") {
+        e.preventDefault();
+        dispatch(selectAll());
+      }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.code === "KeyZ") {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === "KeyZ") {
+        e.preventDefault();
+        handleRedo();
       }
     };
 
@@ -301,7 +327,6 @@ export default function CanvasPage() {
     };
   }, [isSpacePressed, selectedIds, dispatch]);
 
-  // Wheel event listener
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -310,7 +335,6 @@ export default function CanvasPage() {
     return () => canvas.removeEventListener("wheel", handleWheel);
   }, [handleWheel]);
 
-  // Render preview shape while drawing
   const renderPreview = () => {
     if (!isDrawing) return null;
 
@@ -379,7 +403,6 @@ export default function CanvasPage() {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
-      {/* Viewport transform layer */}
       <div
         className="absolute inset-0"
         style={{
@@ -387,7 +410,6 @@ export default function CanvasPage() {
           transformOrigin: "0 0",
         }}
       >
-        {/* Render all shapes */}
         {allShapes.map((shape) => {
           if (!shape) return null;
           const isSelected = !!selected[shape.id];
@@ -421,14 +443,13 @@ export default function CanvasPage() {
           );
         })}
 
-        {/* Preview while drawing */}
         {renderPreview()}
       </div>
 
-      {/* Toolbar */}
       <Toolbar />
 
-      {/* Zoom indicator */}
+      <UndoRedoControls />
+
       <div className="fixed bottom-6 right-6 px-3 py-1 rounded-full bg-white/10 text-zinc-400 text-sm backdrop-blur-sm">
         {Math.round(scale * 100)}%
       </div>

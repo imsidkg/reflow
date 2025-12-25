@@ -3,6 +3,7 @@ import profileReducer from "./slices/profile";
 import projectReducer from "./slices/project";
 import shapesReducer from "./slices/shapes";
 import viewportReducer from "./slices/viewport";
+import historyReducer from "./slices/history";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     project: projectReducer,
     shapes: shapesReducer,
     viewport: viewportReducer,
+    history: historyReducer,
   },
 });
 

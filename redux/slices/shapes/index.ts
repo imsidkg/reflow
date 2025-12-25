@@ -88,7 +88,7 @@ export interface GeneratedUIShape extends BaseShape {
   h: number;
   uiSpecData: string | null;
   sourceFrameId: string;
-  isWorkflowPage?: boolean; // Flag to identify workflow pages
+  isWorkflowPage?: boolean;
 }
 
 export type Shape =
@@ -260,7 +260,7 @@ const makeText = (p: {
   type: "text",
   x: p.x,
   y: p.y,
-  text: p.text ?? "Type here...", // Start with placeholder text
+  text: p.text ?? "Type here...",
   fontSize: p.fontSize ?? 16,
   fontFamily: p.fontFamily ?? "Inter, sans-serif",
   fontWeight: p.fontWeight ?? 400,
@@ -280,13 +280,13 @@ const makeGeneratedUI = (p: {
   y: number;
   w: number;
   h: number;
-  uiSpecData: string | null; // HTML markup as string
+  uiSpecData: string | null;
   sourceFrameId: string;
   id?: string;
   stroke?: string;
   strokeWidth?: number;
   fill?: string | null;
-  isWorkflowPage?: boolean; // Flag to identify workflow pages
+  isWorkflowPage?: boolean;
 }): GeneratedUIShape => ({
   id: p.id ?? nanoid(),
   type: "generatedui",
@@ -297,7 +297,7 @@ const makeGeneratedUI = (p: {
   uiSpecData: p.uiSpecData,
   sourceFrameId: p.sourceFrameId,
   isWorkflowPage: p.isWorkflowPage,
-  stroke: "transparent", // No border for generated UI
+  stroke: "transparent",
   strokeWidth: 0,
   fill: p.fill ?? null,
 });
@@ -408,11 +408,14 @@ const shapesSlice = createSlice({
         frameCounter: number;
       }>
     ) {
-      // Load project data into the shapes state
       state.shapes = action.payload.shapes;
       state.tool = action.payload.tool;
       state.selected = action.payload.selected;
       state.frameCounter = action.payload.frameCounter;
+    },
+    loadShapes(state, action: PayloadAction<EntityState<Shape, string>>) {
+      state.shapes = action.payload;
+      state.selected = {};
     },
   },
 });
@@ -436,6 +439,7 @@ export const {
   selectAll,
   deleteSelected,
   loadProject,
+  loadShapes,
 } = shapesSlice.actions;
 
 export default shapesSlice.reducer;

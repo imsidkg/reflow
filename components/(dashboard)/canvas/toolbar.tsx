@@ -11,7 +11,7 @@ import {
   MoveUpRight,
   Minus,
   Type,
-  Search,
+  Eraser,
 } from "lucide-react";
 import { useEffect } from "react";
 
@@ -28,6 +28,7 @@ const tools: { name: string; icon: React.ReactNode; tool: Tool }[] = [
   { name: "Arrow", icon: <MoveUpRight className="h-4 w-4" />, tool: "arrow" },
   { name: "Line", icon: <Minus className="h-4 w-4" />, tool: "line" },
   { name: "Text", icon: <Type className="h-4 w-4" />, tool: "text" },
+  { name: "Eraser", icon: <Eraser className="h-4 w-4" />, tool: "eraser" },
 ];
 
 export default function Toolbar() {
