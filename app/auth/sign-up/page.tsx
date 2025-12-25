@@ -50,7 +50,7 @@ export default function SignupPage() {
       );
 
       toast.success("Account created successfully!");
-      router.push("/dashboard");
+      router.push("/projects");
     } catch (error: any) {
       const message = error.response?.data?.error || "Failed to create account";
       toast.error(message);

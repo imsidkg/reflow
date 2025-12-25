@@ -26,11 +26,12 @@ import {
   selectAll,
   removeShape,
   loadShapes,
+  setTool,
 } from "@/redux/slices/shapes";
 import {
-  saveSnapshot,
-  undoSnapshot,
-  redoSnapshot,
+  pushToHistory,
+  popFromPast,
+  popFromFuture,
 } from "@/redux/slices/history";
 import type { Point } from "@/redux/slices/viewport";
 import {
@@ -57,18 +58,18 @@ export default function CanvasPage() {
 
   const handleUndo = useCallback(() => {
     if (history.past.length === 0) return;
-    dispatch(undoSnapshot(shapes));
     const previousState = history.past[history.past.length - 1];
     if (previousState) {
+      dispatch(popFromPast(shapes));
       dispatch(loadShapes(previousState));
     }
   }, [dispatch, history.past, shapes]);
 
   const handleRedo = useCallback(() => {
     if (history.future.length === 0) return;
-    dispatch(redoSnapshot(shapes));
     const nextState = history.future[history.future.length - 1];
     if (nextState) {
+      dispatch(popFromFuture(shapes));
       dispatch(loadShapes(nextState));
     }
   }, [dispatch, history.future, shapes]);
@@ -106,7 +107,8 @@ export default function CanvasPage() {
       if (
         shape.type === "rect" ||
         shape.type === "ellipse" ||
-        shape.type === "frame"
+        shape.type === "frame" ||
+        shape.type === "generatedui"
       ) {
         if (
           worldPoint.x >= shape.x &&
@@ -117,8 +119,81 @@ export default function CanvasPage() {
           return shape.id;
         }
       }
+
+      if (shape.type === "line" || shape.type === "arrow") {
+        const dist = pointToLineDistance(
+          worldPoint,
+          { x: shape.startX, y: shape.startY },
+          { x: shape.endX, y: shape.endY }
+        );
+        if (dist < 10) {
+          return shape.id;
+        }
+      }
+
+      if (shape.type === "text") {
+        const textWidth = shape.text.length * (shape.fontSize * 0.6);
+        const textHeight = shape.fontSize * 1.5;
+        if (
+          worldPoint.x >= shape.x &&
+          worldPoint.x <= shape.x + textWidth &&
+          worldPoint.y >= shape.y &&
+          worldPoint.y <= shape.y + textHeight
+        ) {
+          return shape.id;
+        }
+      }
+
+      if (shape.type === "freedraw" && shape.points.length > 0) {
+        const xs = shape.points.map((p) => p.x);
+        const ys = shape.points.map((p) => p.y);
+        const minX = Math.min(...xs) - 10;
+        const maxX = Math.max(...xs) + 10;
+        const minY = Math.min(...ys) - 10;
+        const maxY = Math.max(...ys) + 10;
+        if (
+          worldPoint.x >= minX &&
+          worldPoint.x <= maxX &&
+          worldPoint.y >= minY &&
+          worldPoint.y <= maxY
+        ) {
+          return shape.id;
+        }
+      }
     }
     return null;
+  };
+
+  const pointToLineDistance = (
+    point: Point,
+    lineStart: Point,
+    lineEnd: Point
+  ) => {
+    const A = point.x - lineStart.x;
+    const B = point.y - lineStart.y;
+    const C = lineEnd.x - lineStart.x;
+    const D = lineEnd.y - lineStart.y;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = lenSq !== 0 ? dot / lenSq : -1;
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = lineStart.x;
+      yy = lineStart.y;
+    } else if (param > 1) {
+      xx = lineEnd.x;
+      yy = lineEnd.y;
+    } else {
+      xx = lineStart.x + param * C;
+      yy = lineStart.y + param * D;
+    }
+
+    const dx = point.x - xx;
+    const dy = point.y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -149,7 +224,7 @@ export default function CanvasPage() {
     if (currentTool === "eraser") {
       const hitId = hitTest(worldPoint);
       if (hitId) {
-        dispatch(saveSnapshot(shapes)); 
+        dispatch(pushToHistory(shapes));
         dispatch(removeShape(hitId));
       }
       return;
@@ -181,7 +256,9 @@ export default function CanvasPage() {
           shape &&
           (shape.type === "rect" ||
             shape.type === "ellipse" ||
-            shape.type === "frame")
+            shape.type === "frame" ||
+            shape.type === "text" ||
+            shape.type === "generatedui")
         ) {
           dispatch(
             updateShape({ id, patch: { x: shape.x + dx, y: shape.y + dy } })
@@ -217,7 +294,16 @@ export default function CanvasPage() {
     const endPoint = getWorldPoint(e);
     const { x, y, w, h } = getPreviewDimensions();
 
+    if (currentTool === "text") {
+      dispatch(pushToHistory(shapes));
+      dispatch(addText({ x: startPoint.x, y: startPoint.y }));
+      dispatch(setTool("select")); 
+      setIsDrawing(false);
+      return;
+    }
+
     if (w > 5 || h > 5) {
+      dispatch(pushToHistory(shapes));
       switch (currentTool) {
         case "frame":
           dispatch(addFrame({ x, y, w, h }));
@@ -247,9 +333,6 @@ export default function CanvasPage() {
               endY: endPoint.y,
             })
           );
-          break;
-        case "text":
-          dispatch(addText({ x: startPoint.x, y: startPoint.y }));
           break;
         case "freedraw":
           if (freeDrawPoints.length > 2) {
@@ -294,7 +377,7 @@ export default function CanvasPage() {
       }
       if (e.code === "Delete" || e.code === "Backspace") {
         if (selectedIds.length > 0) {
-          dispatch(saveSnapshot(shapes)); 
+          dispatch(pushToHistory(shapes));
           dispatch(deleteSelected());
         }
       }
@@ -429,7 +512,9 @@ export default function CanvasPage() {
               case "line":
                 return <Line key={shape.id} shape={shape} />;
               case "text":
-                return <Text key={shape.id} shape={shape} />;
+                return (
+                  <Text key={shape.id} shape={shape} isSelected={isSelected} />
+                );
               default:
                 return null;
             }

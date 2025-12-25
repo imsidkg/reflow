@@ -1,11 +1,7 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import {
-  saveSnapshot,
-  undoSnapshot,
-  redoSnapshot,
-} from "@/redux/slices/history";
+import { popFromPast, popFromFuture } from "@/redux/slices/history";
 import { loadShapes } from "@/redux/slices/shapes";
 import { Undo2, Redo2 } from "lucide-react";
 
@@ -20,9 +16,9 @@ export default function UndoRedoControls() {
   const handleUndo = () => {
     if (!canUndo) return;
 
-    dispatch(undoSnapshot(shapes));
     const previousState = history.past[history.past.length - 1];
     if (previousState) {
+      dispatch(popFromPast(shapes));
       dispatch(loadShapes(previousState));
     }
   };
@@ -30,9 +26,9 @@ export default function UndoRedoControls() {
   const handleRedo = () => {
     if (!canRedo) return;
 
-    dispatch(redoSnapshot(shapes));
     const nextState = history.future[history.future.length - 1];
     if (nextState) {
+      dispatch(popFromFuture(shapes));
       dispatch(loadShapes(nextState));
     }
   };

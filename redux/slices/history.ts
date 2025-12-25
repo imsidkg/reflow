@@ -2,6 +2,15 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { EntityState } from "@reduxjs/toolkit";
 import { Shape } from "./shapes";
 
+const cloneEntityState = (
+  state: EntityState<Shape, string>
+): EntityState<Shape, string> => {
+  return {
+    ids: [...state.ids],
+    entities: { ...state.entities },
+  };
+};
+
 interface HistoryState {
   past: EntityState<Shape, string>[];
   future: EntityState<Shape, string>[];
@@ -18,25 +27,34 @@ const historySlice = createSlice({
   name: "history",
   initialState,
   reducers: {
-    saveSnapshot(state, action: PayloadAction<EntityState<Shape, string>>) {
-      state.past.push(action.payload);
+    pushToHistory(state, action: PayloadAction<EntityState<Shape, string>>) {
+      const cloned = cloneEntityState(action.payload);
+      state.past.push(cloned);
       if (state.past.length > state.maxHistory) {
         state.past.shift();
       }
       state.future = [];
     },
 
-    undoSnapshot(state, action: PayloadAction<EntityState<Shape, string>>) {
+    undo(state) {
       if (state.past.length === 0) return;
+    },
 
-      state.future.push(action.payload);
+    redo(state) {
+      if (state.future.length === 0) return;
+    },
+
+    popFromPast(state, action: PayloadAction<EntityState<Shape, string>>) {
+      if (state.past.length === 0) return;
+      const cloned = cloneEntityState(action.payload);
+      state.future.push(cloned);
       state.past.pop();
     },
 
-    redoSnapshot(state, action: PayloadAction<EntityState<Shape, string>>) {
+    popFromFuture(state, action: PayloadAction<EntityState<Shape, string>>) {
       if (state.future.length === 0) return;
-
-      state.past.push(action.payload);
+      const cloned = cloneEntityState(action.payload);
+      state.past.push(cloned);
       state.future.pop();
     },
 
@@ -47,6 +65,6 @@ const historySlice = createSlice({
   },
 });
 
-export const { saveSnapshot, undoSnapshot, redoSnapshot, clearHistory } =
+export const { pushToHistory, popFromPast, popFromFuture, clearHistory } =
   historySlice.actions;
 export default historySlice.reducer;
