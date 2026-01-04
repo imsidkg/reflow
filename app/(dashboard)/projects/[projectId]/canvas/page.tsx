@@ -28,11 +28,13 @@ import {
   removeShape,
   loadShapes,
   setTool,
+  loadProject,
 } from "@/redux/slices/shapes";
 import {
   pushToHistory,
   popFromPast,
   popFromFuture,
+  clearHistory,
 } from "@/redux/slices/history";
 import type { Point } from "@/redux/slices/viewport";
 import {
@@ -42,20 +44,76 @@ import {
   panStart,
   panMove,
   panEnd,
+  restoreViewport,
 } from "@/redux/slices/viewport";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useParams } from "next/navigation";
+import { useDebouncedSave } from "@/hooks/use-debounce";
+import { Cloud, CloudOff, Loader2, Check } from "lucide-react";
 
 export default function CanvasPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
+  const params = useParams();
+  const projectId = params.projectId as string;
 
-  // Redux state
   const shapesState = useAppSelector((state) => state.shapes);
   const shapes = shapesState.shapes;
   const currentTool = shapesState.tool;
   const selected = shapesState.selected;
   const { scale, translate, mode } = useAppSelector((state) => state.viewport);
   const history = useAppSelector((state) => state.history);
+
+  const canvasSnapshot = useMemo(
+    () => ({
+      shapes: shapesState.shapes,
+      selected: shapesState.selected,
+      tool: shapesState.tool,
+      frameCounter: shapesState.frameCounter,
+      viewport: { scale, translate },
+    }),
+    [
+      shapesState.shapes,
+      shapesState.selected,
+      shapesState.tool,
+      shapesState.frameCounter,
+      scale,
+      translate,
+    ]
+  );
+
+  const { status: saveStatus } = useDebouncedSave(canvasSnapshot, projectId);
+
+  useEffect(() => {
+    const loadCanvas = async () => {
+      try {
+        const response = await fetch(`/api/project/${projectId}/canvas`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (data.canvas) {
+          dispatch(
+            loadProject({
+              shapes: data.canvas.shapes,
+              tool: data.canvas.tool || "select",
+              selected: data.canvas.selected || {},
+              frameCounter: data.canvas.frameCounter || 0,
+            })
+          );
+          if (data.canvas.viewport) {
+            dispatch(restoreViewport(data.canvas.viewport));
+          }
+          dispatch(clearHistory());
+        }
+      } catch (error) {
+        console.error("Failed to load canvas:", error);
+      }
+    };
+
+    if (projectId) {
+      loadCanvas();
+    }
+  }, [projectId, dispatch]);
 
   const handleUndo = useCallback(() => {
     if (history.past.length === 0) return;
@@ -547,6 +605,33 @@ export default function CanvasPage() {
       <Toolbar />
 
       <UndoRedoControls />
+
+      <div className="fixed top-24 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-sm backdrop-blur-sm">
+        {saveStatus === "saving" && (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+            <span className="text-zinc-400">Saving...</span>
+          </>
+        )}
+        {saveStatus === "saved" && (
+          <>
+            <Check className="h-4 w-4 text-green-400" />
+            <span className="text-green-400">Saved</span>
+          </>
+        )}
+        {saveStatus === "error" && (
+          <>
+            <CloudOff className="h-4 w-4 text-red-400" />
+            <span className="text-red-400">Save failed</span>
+          </>
+        )}
+        {saveStatus === "idle" && (
+          <>
+            <Cloud className="h-4 w-4 text-zinc-500" />
+            <span className="text-zinc-500">Auto-save on</span>
+          </>
+        )}
+      </div>
 
       <div className="fixed bottom-6 right-6 px-3 py-1 rounded-full bg-white/10 text-zinc-400 text-sm backdrop-blur-sm">
         {Math.round(scale * 100)}%

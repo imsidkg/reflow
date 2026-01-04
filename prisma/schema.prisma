@@ -41,4 +41,19 @@ model Project {
   userId      String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  canvas      Canvas?
+}
+
+model Canvas {
+  id           String   @id @default(cuid())
+  shapes       Json
+  selected     Json
+  tool         String   @default("select")
+  frameCounter Int      @default(0)
+  viewport     Json
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId    String   @unique
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
