@@ -73,10 +73,12 @@ export default function SignupPage() {
             <Link href="/" aria-label="go home">
               <LogoIcon />
             </Link>
-            <h1 className="mb-1 mt-4 text-xl font-semibold">
+            <h1 className="mb-1 mt-4 text-xl font-semibold text-foreground">
               Create a SketchCode Account
             </h1>
-            <p className="text-sm">Welcome! Create an account to get started</p>
+            <p className="text-sm text-foreground">
+              Welcome! Create an account to get started
+            </p>
           </div>
           <hr className="my-4 border-dashed" />
           <div className="space-y-5">

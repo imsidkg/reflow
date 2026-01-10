@@ -72,10 +72,12 @@ export default function LoginPage() {
             <Link href="/" aria-label="go home">
               <LogoIcon />
             </Link>
-            <h1 className="mb-1 mt-4 text-xl font-semibold">
+            <h1 className="mb-1 mt-4 text-xl font-semibold text-foreground">
               Sign In to SketchCode
             </h1>
-            <p className="text-sm">Welcome back! Sign in to continue</p>
+            <p className="text-sm text-foreground">
+              Welcome back! Sign in to continue
+            </p>
           </div>
 
           <hr className="my-4 border-dashed" />

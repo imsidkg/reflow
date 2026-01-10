@@ -2,7 +2,7 @@
 
 import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Palette, LayoutTemplate } from "lucide-react";
+import { Palette, LayoutTemplate, Image } from "lucide-react";
 
 export default function ProjectLayout({
   children,
