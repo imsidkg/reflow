@@ -4,6 +4,7 @@ import projectReducer from "./slices/project";
 import shapesReducer from "./slices/shapes";
 import viewportReducer from "./slices/viewport";
 import historyReducer from "./slices/history";
+import moodBoardReducer from "./slices/mood-board";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     shapes: shapesReducer,
     viewport: viewportReducer,
     history: historyReducer,
+    moodBoard: moodBoardReducer,
   },
 });
 
