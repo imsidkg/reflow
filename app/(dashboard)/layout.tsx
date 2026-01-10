@@ -28,7 +28,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div>
+    <div className="bg-zinc-950 min-h-screen">
       <Suspense fallback={<div className="h-16" />}>
         <Navbar />
       </Suspense>

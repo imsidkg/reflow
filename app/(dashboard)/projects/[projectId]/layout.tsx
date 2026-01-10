@@ -29,7 +29,7 @@ export default function ProjectLayout({
   const isActiveTab = (href: string) => pathname === href;
 
   return (
-    <div>
+    <div className="bg-zinc-950 min-h-screen">
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
         <div className="flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.08] p-2 backdrop-blur-xl">
           {tabs.map((tab) => (
