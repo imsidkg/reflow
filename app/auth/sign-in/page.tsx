@@ -59,7 +59,7 @@ export default function LoginPage() {
   }
 
   return (
-    <section className="flex min-h-screen bg-zinc-950 px-4 py-16 md:py-32">
+    <section className="dark flex min-h-screen bg-zinc-950 px-4 py-16 md:py-32">
       <form
         onSubmit={(e) => {
           e.preventDefault();

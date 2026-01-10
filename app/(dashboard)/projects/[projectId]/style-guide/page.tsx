@@ -11,53 +11,56 @@ export default function StyleGuidePage() {
   return (
     <div className="fixed inset-0 pt-20 overflow-hidden bg-zinc-950">
       <div className="w-full h-full flex flex-col px-8 py-6">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-white mb-1">
-            Style Guide
-          </h1>
-          <p className="text-sm text-zinc-500">
-            Manage your style guide for your project
-          </p>
-        </div>
+        {/* Header with title on left, tabs on right */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-white mb-1">
+              Style Guide
+            </h1>
+            <p className="text-sm text-zinc-500">
+              Manage your style guide for your project
+            </p>
+          </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-2 mb-8">
-          <button
-            onClick={() => setActiveTab("colours")}
-            className={[
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              activeTab === "colours"
-                ? "bg-white/10 text-white border border-white/20"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5",
-            ].join(" ")}
-          >
-            <Palette className="h-4 w-4" />
-            Colours
-          </button>
-          <button
-            onClick={() => setActiveTab("typography")}
-            className={[
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              activeTab === "typography"
-                ? "bg-white/10 text-white border border-white/20"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5",
-            ].join(" ")}
-          >
-            <Type className="h-4 w-4" />
-            Typography
-          </button>
-          <button
-            onClick={() => setActiveTab("moodboard")}
-            className={[
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              activeTab === "moodboard"
-                ? "bg-white/10 text-white border border-white/20"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5",
-            ].join(" ")}
-          >
-            <ImageIcon className="h-4 w-4" />
-            Moodboard
-          </button>
+          {/* Tabs styled like the uploaded image */}
+          <div className="flex items-center gap-1 rounded-full border border-white/[0.12] bg-white/[0.08] p-1 backdrop-blur-xl">
+            <button
+              onClick={() => setActiveTab("colours")}
+              className={[
+                "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                activeTab === "colours"
+                  ? "bg-white/[0.15] text-white"
+                  : "text-zinc-400 hover:text-zinc-200",
+              ].join(" ")}
+            >
+              <span>#</span>
+              Colours
+            </button>
+            <button
+              onClick={() => setActiveTab("typography")}
+              className={[
+                "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                activeTab === "typography"
+                  ? "bg-white/[0.15] text-white"
+                  : "text-zinc-400 hover:text-zinc-200",
+              ].join(" ")}
+            >
+              <Type className="h-4 w-4" />
+              Typography
+            </button>
+            <button
+              onClick={() => setActiveTab("moodboard")}
+              className={[
+                "flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                activeTab === "moodboard"
+                  ? "bg-white/[0.15] text-white"
+                  : "text-zinc-400 hover:text-zinc-200",
+              ].join(" ")}
+            >
+              <ImageIcon className="h-4 w-4" />
+              Moodboard
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto">
