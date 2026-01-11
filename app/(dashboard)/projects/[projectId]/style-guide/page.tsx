@@ -16,6 +16,9 @@ import {
   Image as ImageIcon,
   X,
   Loader2,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,6 +34,7 @@ export default function StyleGuidePage() {
   const [activeTab, setActiveTab] = useState<
     "colours" | "typography" | "moodboard"
   >("colours");
+  const [slideIndex, setSlideIndex] = useState(0);
 
   useEffect(() => {
     if (projectId) {
@@ -84,7 +88,6 @@ export default function StyleGuidePage() {
   return (
     <div className="fixed inset-0 pt-20 overflow-hidden bg-zinc-950">
       <div className="w-full h-full flex flex-col px-8 py-6">
-        {/* Header with title on left, tabs on right */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-semibold text-white mb-1">
@@ -95,7 +98,6 @@ export default function StyleGuidePage() {
             </p>
           </div>
 
-          {/* Tabs styled like the uploaded image */}
           <div className="flex items-center gap-1 rounded-full border border-white/[0.12] bg-white/[0.08] p-1 backdrop-blur-xl">
             <button
               onClick={() => setActiveTab("colours")}
@@ -203,57 +205,106 @@ export default function StyleGuidePage() {
                 </div>
               ) : (
                 <div className="relative w-full h-full flex items-center justify-center">
-                  <div className="flex items-center justify-center gap-8">
-                    {images.slice(0, 3).map((image, index) => (
-                      <div
-                        key={image.id}
-                        className="group relative"
-                        style={{
-                          transform: `perspective(1000px) rotateY(${
-                            index === 0
-                              ? "15deg"
-                              : index === 2
-                              ? "-15deg"
-                              : "0deg"
-                          })`,
-                          zIndex: index === 1 ? 10 : 1,
-                        }}
+                  <div className="flex flex-col items-end">
+                    <div className="relative flex items-center gap-6">
+                      <button
+                        onClick={() => setSlideIndex(slideIndex - 1)}
+                        disabled={slideIndex === 0}
+                        className={`p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all ${
+                          slideIndex === 0
+                            ? "opacity-0 pointer-events-none"
+                            : "opacity-100"
+                        }`}
                       >
-                        <div className="relative w-64 h-64 rounded-2xl overflow-hidden border border-white/10 shadow-2xl transition-transform hover:scale-105">
-                          <img
-                            src={image.url}
-                            alt={image.filename}
-                            className="w-full h-full object-cover cursor-pointer"
-                            onClick={() => setPreviewImage(image.url)}
-                          />
-                          <button
-                            onClick={() => handleDelete(image.id)}
-                            className="absolute top-2 right-2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
+                        <ChevronLeft className="h-6 w-6" />
+                      </button>
+
+                      <div
+                        className="overflow-hidden"
+                        style={{ width: "864px" }}
+                      >
+                        <div
+                          className="flex items-center gap-8 transition-transform duration-500 ease-out"
+                          style={{
+                            transform: `translateX(${-slideIndex * 288}px)`,
+                          }}
+                        >
+                          {images.map((image, index) => {
+                            const isVisible =
+                              index >= slideIndex && index < slideIndex + 3;
+                            const relativeIndex = index - slideIndex;
+                            return (
+                              <div
+                                key={image.id}
+                                className="group relative flex-shrink-0 transition-all duration-500"
+                                style={{
+                                  transform: isVisible
+                                    ? `perspective(1000px) rotateY(${
+                                        relativeIndex === 0
+                                          ? "15deg"
+                                          : relativeIndex === 2
+                                          ? "-15deg"
+                                          : "0deg"
+                                      })`
+                                    : "perspective(1000px) rotateY(0deg)",
+                                  zIndex: relativeIndex === 1 ? 10 : 1,
+                                }}
+                              >
+                                <div className="relative w-64 h-64 rounded-2xl overflow-hidden border border-white/10 shadow-2xl transition-transform hover:scale-105">
+                                  <img
+                                    src={image.url}
+                                    alt={image.filename}
+                                    className="w-full h-full object-cover cursor-pointer"
+                                    onClick={() => setPreviewImage(image.url)}
+                                  />
+                                  <button
+                                    onClick={() => handleDelete(image.id)}
+                                    className="absolute top-2 right-2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="fixed bottom-6 right-6 flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium border border-white/20 transition-all disabled:opacity-50 backdrop-blur-sm"
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4" />
+                      <button
+                        onClick={() => setSlideIndex(slideIndex + 1)}
+                        disabled={slideIndex + 3 >= images.length}
+                        className={`p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all ${
+                          slideIndex + 3 >= images.length
+                            ? "opacity-0 pointer-events-none"
+                            : "opacity-100"
+                        }`}
+                      >
+                        <ChevronRight className="h-6 w-6" />
+                      </button>
+                    </div>
+
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-sans font-medium border border-white/20 transition-all disabled:opacity-50 backdrop-blur-sm whitespace-nowrap"
+                      >
+                        {isUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
                         Add More
-                      </>
-                    )}
-                  </button>
+                      </button>
+                      <button
+                        disabled={images.length === 0}
+                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 text-sm font-sans font-medium transition-all disabled:opacity-50 whitespace-nowrap"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        Generate with AI
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
