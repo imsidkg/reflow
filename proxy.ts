@@ -7,14 +7,10 @@ const PUBLIC_ROUTES = [
   "/auth/sign-up",
   "/api/sign-in",
   "/api/sign-up",
+  "/api/inngest",
 ];
 
-const PROTECTED_ROUTES = [
-  "/dashboard",
-  "/projects",
-  "/canvas",
-  "/settings",
-];
+const PROTECTED_ROUTES = ["/dashboard", "/projects", "/canvas", "/settings"];
 
 const PROTECTED_API_ROUTES = [
   "/api/projects",
@@ -59,10 +55,7 @@ export async function proxy(request: NextRequest) {
 
   if (!token) {
     if (pathname.startsWith("/api")) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const signInUrl = new URL("/auth/sign-in", request.url);
@@ -76,7 +69,7 @@ export async function proxy(request: NextRequest) {
     if (pathname.startsWith("/api")) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -93,7 +86,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
