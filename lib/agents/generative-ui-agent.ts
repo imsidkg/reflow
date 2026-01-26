@@ -7,6 +7,6 @@ export const generativeUiAgent = createAgent({
     "Converts wireframes into production-ready HTML using the style guide",
   system: prompts.generativeUi.system,
   model: gemini({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
   }),
 });

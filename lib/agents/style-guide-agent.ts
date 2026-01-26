@@ -7,6 +7,6 @@ export const styleGuideAgent = createAgent({
     "Analyzes mood board images and generates a comprehensive design system with colors and typography",
   system: prompts.styleGuide.system,
   model: gemini({
-    model: "gemini-2.0-flash",
+    model: "gemini-1.5-flash",
   }),
 });

@@ -11,7 +11,7 @@ import {
 } from "@/redux/slices/mood-board";
 import {
   Upload,
-  Palette,
+  Palette as PaletteIcon,
   Type,
   Image as ImageIcon,
   X,
@@ -21,14 +21,30 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useStyleGuide } from "@/hooks/use-style-guide";
+import { ColorPalette } from "@/components/style-guide/color-palette";
+import { TypographyPreview } from "@/components/style-guide/typography-preview";
 
 export default function StyleGuidePage() {
   const params = useParams();
   const projectId = params.projectId as string;
   const dispatch = useAppDispatch();
-  const { images, isLoading, isUploading, error } = useAppSelector(
-    (state) => state.moodBoard
-  );
+  const {
+    images,
+    isLoading: isImagesLoading,
+    isUploading,
+    error,
+  } = useAppSelector((state) => state.moodBoard);
+
+  // Custom hook for AI generation
+  const {
+    styleGuide,
+    isGenerating,
+    fetching: isStyleLoading,
+    fetchStyleGuide,
+    generateStyleGuide,
+  } = useStyleGuide({ projectId });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
@@ -36,12 +52,15 @@ export default function StyleGuidePage() {
   >("colours");
   const [slideIndex, setSlideIndex] = useState(0);
 
+  // Fetch initial data
   useEffect(() => {
     if (projectId) {
       dispatch(fetchMoodBoardImages(projectId));
+      fetchStyleGuide();
     }
-  }, [projectId, dispatch]);
+  }, [projectId, dispatch, fetchStyleGuide]);
 
+  // Handle errors
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -140,44 +159,106 @@ export default function StyleGuidePage() {
 
         <div className="flex-1 overflow-auto">
           {activeTab === "colours" && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-                  <Palette className="h-8 w-8 text-zinc-600" />
+            <div className="h-full">
+              {isStyleLoading || isGenerating ? (
+                <div className="flex flex-col items-center justify-center h-full gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 blur-xl bg-purple-500/20 rounded-full" />
+                    <Loader2 className="h-8 w-8 text-purple-400 animate-spin relative z-10" />
+                  </div>
+                  <p className="text-zinc-400 animate-pulse">
+                    {isGenerating
+                      ? "AI is analyzing your mood board..."
+                      : "Loading style guide..."}
+                  </p>
                 </div>
-                <h3 className="text-lg font-medium text-white mb-2">
-                  No colors generated yet
-                </h3>
-                <p className="text-sm text-zinc-500 max-w-md">
-                  Upload images to your mood board and generate an AI-powered
-                  <br />
-                  style guide with colors and typography.
-                </p>
-              </div>
+              ) : styleGuide?.colors && styleGuide.colors.length > 0 ? (
+                <div>
+                  <div className="flex items-center justify-between px-6 mb-4">
+                    <h2 className="text-xl font-medium text-white">
+                      {styleGuide.themeName || "Generated Palette"}
+                    </h2>
+                    {styleGuide.themeDesc && (
+                      <p className="text-sm text-zinc-500 italic">
+                        "{styleGuide.themeDesc}"
+                      </p>
+                    )}
+                  </div>
+                  <ColorPalette colors={styleGuide.colors} />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                      <PaletteIcon className="h-8 w-8 text-zinc-600" />
+                    </div>
+                    <h3 className="text-lg font-medium text-white mb-2">
+                      No colors generated yet
+                    </h3>
+                    <p className="text-sm text-zinc-500 max-w-md mb-6">
+                      Upload images to your mood board and generate an
+                      AI-powered
+                      <br />
+                      style guide with colors and typography.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("moodboard")}
+                      className="px-4 py-2 rounded-full bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors"
+                    >
+                      Go to Moodboard
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === "typography" && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
-                  <Type className="h-8 w-8 text-zinc-600" />
+            <div className="h-full">
+              {isStyleLoading || isGenerating ? (
+                <div className="flex flex-col items-center justify-center h-full gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 blur-xl bg-blue-500/20 rounded-full" />
+                    <Loader2 className="h-8 w-8 text-blue-400 animate-spin relative z-10" />
+                  </div>
+                  <p className="text-zinc-400 animate-pulse">
+                    {isGenerating
+                      ? "AI is selecting fonts..."
+                      : "Loading typography..."}
+                  </p>
                 </div>
-                <h3 className="text-lg font-medium text-white mb-2">
-                  No typography set yet
-                </h3>
-                <p className="text-sm text-zinc-500 max-w-md">
-                  Upload images to your mood board and generate an AI-powered
-                  <br />
-                  style guide with colors and typography.
-                </p>
-              </div>
+              ) : styleGuide?.typography && styleGuide.typography.length > 0 ? (
+                <TypographyPreview typography={styleGuide.typography} />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                      <Type className="h-8 w-8 text-zinc-600" />
+                    </div>
+                    <h3 className="text-lg font-medium text-white mb-2">
+                      No typography set yet
+                    </h3>
+                    <p className="text-sm text-zinc-500 max-w-md mb-6">
+                      Upload images to your mood board and generate an
+                      AI-powered
+                      <br />
+                      style guide with colors and typography.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("moodboard")}
+                      className="px-4 py-2 rounded-full bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors"
+                    >
+                      Go to Moodboard
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === "moodboard" && (
             <div className="flex items-center justify-center h-full">
-              {isLoading ? (
+              {isImagesLoading ? (
                 <div className="flex items-center gap-3 text-zinc-400">
                   <Loader2 className="h-6 w-6 animate-spin" />
                   <span>Loading images...</span>
@@ -243,8 +324,8 @@ export default function StyleGuidePage() {
                                         relativeIndex === 0
                                           ? "15deg"
                                           : relativeIndex === 2
-                                          ? "-15deg"
-                                          : "0deg"
+                                            ? "-15deg"
+                                            : "0deg"
                                       })`
                                     : "perspective(1000px) rotateY(0deg)",
                                   zIndex: relativeIndex === 1 ? 10 : 1,
@@ -286,7 +367,7 @@ export default function StyleGuidePage() {
                     <div className="flex gap-3 mt-6">
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
+                        disabled={isUploading || isGenerating}
                         className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-sans font-medium border border-white/20 transition-all disabled:opacity-50 backdrop-blur-sm whitespace-nowrap"
                       >
                         {isUploading ? (
@@ -297,11 +378,18 @@ export default function StyleGuidePage() {
                         Add More
                       </button>
                       <button
-                        disabled={images.length === 0}
+                        onClick={() =>
+                          generateStyleGuide(() => setActiveTab("colours"))
+                        }
+                        disabled={images.length === 0 || isGenerating}
                         className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 text-sm font-sans font-medium transition-all disabled:opacity-50 whitespace-nowrap"
                       >
-                        <Sparkles className="h-4 w-4" />
-                        Generate with AI
+                        {isGenerating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
+                        {isGenerating ? "Generating..." : "Generate with AI"}
                       </button>
                     </div>
                   </div>
