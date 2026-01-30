@@ -11,6 +11,7 @@ import { SelectionOverlay } from "@/components/(dashboard)/canvas/selection";
 import Toolbar from "@/components/(dashboard)/canvas/toolbar";
 import UndoRedoControls from "@/components/(dashboard)/canvas/undo-redo";
 import ResizeHandles from "@/components/(dashboard)/canvas/resize-handles";
+import { InspirationBoard } from "@/components/(dashboard)/canvas/inspiration-board";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
   addRect,
@@ -79,7 +80,7 @@ export default function CanvasPage() {
       shapesState.frameCounter,
       scale,
       translate,
-    ]
+    ],
   );
 
   const { status: saveStatus } = useDebouncedSave(canvasSnapshot, projectId);
@@ -98,7 +99,7 @@ export default function CanvasPage() {
               tool: data.canvas.tool || "select",
               selected: data.canvas.selected || {},
               frameCounter: data.canvas.frameCounter || 0,
-            })
+            }),
           );
           if (data.canvas.viewport) {
             dispatch(restoreViewport(data.canvas.viewport));
@@ -183,7 +184,7 @@ export default function CanvasPage() {
         const dist = pointToLineDistance(
           worldPoint,
           { x: shape.startX, y: shape.startY },
-          { x: shape.endX, y: shape.endY }
+          { x: shape.endX, y: shape.endY },
         );
         if (dist < 10) {
           return shape.id;
@@ -226,7 +227,7 @@ export default function CanvasPage() {
   const pointToLineDistance = (
     point: Point,
     lineStart: Point,
-    lineEnd: Point
+    lineEnd: Point,
   ) => {
     const A = point.x - lineStart.x;
     const B = point.y - lineStart.y;
@@ -320,7 +321,7 @@ export default function CanvasPage() {
             shape.type === "generatedui")
         ) {
           dispatch(
-            updateShape({ id, patch: { x: shape.x + dx, y: shape.y + dy } })
+            updateShape({ id, patch: { x: shape.x + dx, y: shape.y + dy } }),
           );
         }
       });
@@ -380,7 +381,7 @@ export default function CanvasPage() {
               startY: startPoint.y,
               endX: endPoint.x,
               endY: endPoint.y,
-            })
+            }),
           );
           break;
         case "line":
@@ -390,7 +391,7 @@ export default function CanvasPage() {
               startY: startPoint.y,
               endX: endPoint.x,
               endY: endPoint.y,
-            })
+            }),
           );
           break;
         case "freedraw":
@@ -418,14 +419,14 @@ export default function CanvasPage() {
           wheelZoom({
             deltaY: e.deltaY,
             originScreen: { x: e.clientX, y: e.clientY },
-          })
+          }),
         );
         return;
       }
 
       dispatch(wheelPan({ dx: -e.deltaX, dy: -e.deltaY }));
     },
-    [dispatch]
+    [dispatch],
   );
 
   useEffect(() => {
@@ -606,7 +607,9 @@ export default function CanvasPage() {
 
       <UndoRedoControls />
 
-      <div className="fixed top-24 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-sm backdrop-blur-sm">
+      <InspirationBoard />
+
+      <div className="fixed bottom-6 left-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-sm backdrop-blur-sm">
         {saveStatus === "saving" && (
           <>
             <Loader2 className="h-4 w-4 animate-spin text-blue-400" />

@@ -1,4 +1,7 @@
 import { Shape } from "@/redux/slices/shapes";
+import { Sparkles, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useParams } from "next/navigation";
 
 interface SelectionOverlayProps {
   shape: Shape;
@@ -52,7 +55,7 @@ export const SelectionOverlay = ({
       case "text":
         const textWidth = Math.max(
           shape.text.length * (shape.fontSize * 0.6),
-          100
+          100,
         );
         const textHeight = shape.fontSize * 1.5;
         return {
@@ -68,16 +71,63 @@ export const SelectionOverlay = ({
 
   const bounds = getBounds();
 
+  const { projectId } = useParams();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsGenerating(true);
+    try {
+      const res = await fetch(`/api/project/${projectId}/generate-ui`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        // Optimistic UI or toast
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTimeout(() => setIsGenerating(false), 2000);
+    }
+  };
+
+  const showGenerate = shape.type === "frame" || shape.type === "rect";
+
   return (
-    <div
-      className="absolute pointer-events-none border-2 border-blue-500"
-      style={{
-        left: bounds.x - 2,
-        top: bounds.y - 2,
-        width: bounds.w + 4,
-        height: bounds.h + 4,
-        borderRadius: shape.type === "frame" ? "10px" : "4px",
-      }}
-    />
+    <>
+      <div
+        className="absolute pointer-events-none border-2 border-blue-500"
+        style={{
+          left: bounds.x - 2,
+          top: bounds.y - 2,
+          width: bounds.w + 4,
+          height: bounds.h + 4,
+          borderRadius: shape.type === "frame" ? "10px" : "4px",
+        }}
+      />
+      {showGenerate && (
+        <div
+          className="absolute flex items-center justify-end pointer-events-auto"
+          style={{
+            left: bounds.x,
+            top: bounds.y - 30, // Position above the shape
+            width: bounds.w,
+          }}
+        >
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="flex items-center gap-1.5 text-xs text-white hover:text-blue-400 transition-colors bg-transparent px-2 py-1 rounded"
+          >
+            {isGenerating ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Sparkles className="w-3 h-3 text-white" />
+            )}
+            Generate UI
+          </button>
+        </div>
+      )}
+    </>
   );
 };
