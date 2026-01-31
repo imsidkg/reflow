@@ -80,6 +80,8 @@ export const SelectionOverlay = ({
     try {
       const res = await fetch(`/api/project/${projectId}/generate-ui`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shapeId: shape.id }),
       });
       if (res.ok) {
         // Optimistic UI or toast
@@ -108,6 +110,7 @@ export const SelectionOverlay = ({
       {showGenerate && (
         <div
           className="absolute flex items-center justify-end pointer-events-auto"
+          onPointerDown={(e) => e.stopPropagation()}
           style={{
             left: bounds.x,
             top: bounds.y - 30, // Position above the shape

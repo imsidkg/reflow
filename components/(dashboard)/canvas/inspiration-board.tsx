@@ -12,7 +12,6 @@ import {
   Sparkles,
   LayoutPanelTop,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type MoodBoardImage = {
   id: string;
@@ -83,6 +82,20 @@ export function InspirationBoard() {
     }
   };
 
+  const handleRemove = async () => {
+
+    try {
+      const res = await fetch(`/api/project/${projectId}/mood-board`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setImages([]);
+      }
+    } catch (error) {
+      console.error("Failed to clear images", error);
+    }
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
@@ -111,7 +124,7 @@ export function InspirationBoard() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="absolute top-24 right-5 p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-all z-50 shadow-lg"
+        className="absolute top-1/2 -translate-y-1/2 left-5 p-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-all z-50 shadow-lg cursor-pointer"
         title="Open Inspiration Board"
       >
         <LayoutPanelTop className="w-6 h-6" />
@@ -170,7 +183,10 @@ export function InspirationBoard() {
         <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
           Uploaded Images ({images.length})
         </h4>
-        <button className="text-xs text-zinc-600 hover:text-red-400 flex items-center gap-1 transition-colors cursor-not-allowed opacity-50">
+        <button
+          onClick={handleRemove}
+          className="text-xs text-zinc-600 hover:text-red-400 flex items-center gap-1 transition-colors cursor-pointer opacity-50"
+        >
           <Trash2 className="w-3 h-3" /> Clear All
         </button>
       </div>

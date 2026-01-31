@@ -361,7 +361,7 @@ On conflicts: the styleGuide always wins over image cues.
           .map((swatch: any) => {
             return `${swatch.name}: ${swatch.hexColor}, ${swatch.description}`;
           })
-          .join(", ")
+          .join(", "),
       )
       .join(", ")}
     typography: ${typography
@@ -370,7 +370,7 @@ On conflicts: the styleGuide always wins over image cues.
           .map((style: any) => {
             return `${style.name}: ${style.description}, ${style.fontFamily}, ${style.fontWeight}, ${style.fontSize}, ${style.lineHeight}`;
           })
-          .join(", ")
+          .join(", "),
       )
       .join(", ")}
     `,

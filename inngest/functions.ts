@@ -229,7 +229,7 @@ export const generateUI = inngest.createFunction(
   { id: "generate-ui", name: "Generate UI from Wireframe" },
   { event: "ui/generate" },
   async ({ event, step }) => {
-    const { projectId } = event.data;
+    const { projectId, shapeId } = event.data;
 
     const data = await step.run("fetch-data", async () => {
       const [sg, dv, mbs] = await Promise.all([
@@ -254,38 +254,133 @@ export const generateUI = inngest.createFunction(
     if (!data.styleGuide) throw new Error("Style guide missing");
     if (!data.canvas) throw new Error("Canvas missing");
 
-    const result = await step.run("run-ai-agent", async () => {
+    const result = await step.run("generate-with-gemini", async () => {
+      // 1. Download images from S3
+      const imagesParts = await Promise.all(
+        data.moodBoards.map(async (mb) => {
+          try {
+            const key = extractKeyFromUrl(mb.url);
+            if (!key) return null;
+
+            const command = new GetObjectCommand({
+              Bucket: process.env.AWS_S3_BUCKET_NAME,
+              Key: key,
+            });
+
+            const s3Response = await s3Client.send(command);
+            const byteArray = await s3Response.Body?.transformToByteArray();
+
+            if (!byteArray) return null;
+
+            return {
+              inlineData: {
+                data: Buffer.from(byteArray).toString("base64"),
+                mimeType: "image/png", // Assuming PNG, but could assume based on file extension if needed
+              },
+            };
+          } catch (error) {
+            console.error(`Failed to download image ${mb.url}:`, error);
+            return null;
+          }
+        }),
+      ).then((parts) => parts.filter((p) => p !== null));
+
       const colors = data.styleGuide?.colors as any[];
       const typography = data.styleGuide?.typography as any[];
-      const imageUrls = data.moodBoards.map((mb) => mb.url);
 
       const basePrompt = userPrompts.generateUi(
-        [{ swatches: colors }],
-        [{ styles: typography }],
+        [{ swatches: colors || [] }],
+        [{ styles: typography || [] }],
       );
+
+      // Filter for specific shape if ID provided
+      let wireframeData = data.canvas?.shapes;
+      if (shapeId && (data.canvas?.shapes as any)?.ids?.includes(shapeId)) {
+        const entities = (data.canvas?.shapes as any).entities;
+        wireframeData = entities[shapeId];
+      }
 
       const fullPrompt = `${basePrompt}
 
 Wireframe Data:
-${JSON.stringify(data.canvas?.shapes)}
+${JSON.stringify(wireframeData)}
 
-Inspiration:
-${imageUrls.join("\n")}`;
+Instructions:
+Generate the HTML based on the wireframe and style guide. 
+Ignore the image URLs in the prompt text below as I have provided the actual image data above.
+`;
 
-      return generativeUiAgent.run(fullPrompt);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        generationConfig: {
+          responseMimeType: "text/plain", // We want HTML string, not JSON
+        },
+      });
+
+      // Pass both text prompt and image parts
+      const result = await model.generateContent([fullPrompt, ...imagesParts]);
+      const response = await result.response;
+      let text = response.text();
+
+      // Clean up markdown code blocks if present
+      text = text.replace(/```html/g, "").replace(/```/g, "");
+
+      return text;
     });
 
     const storedUI = await step.run("save-result", async () => {
       const htmlContent =
         typeof result === "string" ? result : JSON.stringify(result);
 
-      return prisma.generatedUI.create({
+      // 1. Create the persistent record
+      const generatedUIRecord = await prisma.generatedUI.create({
         data: {
           projectId,
           html: htmlContent,
           name: `Generated UI - ${new Date().toLocaleString()}`,
         },
       });
+
+      // 2. If we have a source shape, add it to the canvas
+      if (shapeId) {
+        const currentCanvas = await prisma.canvas.findUnique({
+          where: { projectId },
+          select: { shapes: true },
+        });
+
+        if (currentCanvas?.shapes) {
+          const shapesFn = currentCanvas.shapes as any;
+          const sourceShape = shapesFn.entities[shapeId];
+
+          if (sourceShape) {
+            const newShapeId = crypto.randomUUID();
+            const newShape = {
+              id: newShapeId,
+              type: "generatedui",
+              x: sourceShape.x,
+              y: sourceShape.y,
+              w: sourceShape.w,
+              h: sourceShape.h,
+              uiSpecData: htmlContent,
+              sourceFrameId: shapeId,
+              stroke: "transparent",
+              strokeWidth: 0,
+              fill: null,
+            };
+
+            // Update shapes JSON
+            shapesFn.ids.push(newShapeId);
+            shapesFn.entities[newShapeId] = newShape;
+
+            await prisma.canvas.update({
+              where: { projectId },
+              data: { shapes: shapesFn },
+            });
+          }
+        }
+      }
+
+      return generatedUIRecord;
     });
 
     return { success: true, id: storedUI.id };

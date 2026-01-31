@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     console.error("Error fetching mood board images:", error);
     return NextResponse.json(
       { error: "Failed to fetch images" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -81,7 +81,39 @@ export async function POST(req: NextRequest, { params }: Params) {
     console.error("Error uploading mood board image:", error);
     return NextResponse.json(
       { error: error.message || "Failed to upload image" },
-      { status: 500 }
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: Params) {
+  try {
+    const { projectId } = await params;
+    const session = await getCurrentUser();
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId, userId: session.user.id },
+    });
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Optional: Delete from S3 if we tracked keys, but strictly DB for now is fast cleanup
+    await prisma.moodBoard.deleteMany({
+      where: { projectId },
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error: any) {
+    console.error("Error clearing mood board:", error);
+    return NextResponse.json(
+      { error: "Failed to clear images" },
+      { status: 500 },
     );
   }
 }

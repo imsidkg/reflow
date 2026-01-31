@@ -7,10 +7,21 @@ export async function POST(
 ) {
   const { projectId } = await params;
 
-  await inngest.send({
-    name: "ui/generate",
-    data: { projectId },
-  });
+  try {
+    const body = await req.json();
+    const { shapeId } = body;
 
-  return NextResponse.json({ success: true, message: "Started" });
+    await inngest.send({
+      name: "ui/generate",
+      data: { projectId, shapeId },
+    });
+
+    return NextResponse.json({ success: true, message: "Started" });
+  } catch (error) {
+    console.error("[API] Error sending to Inngest:", error);
+    return NextResponse.json(
+      { error: "Failed to start generation" },
+      { status: 500 },
+    );
+  }
 }

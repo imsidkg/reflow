@@ -1,12 +1,13 @@
 "use client";
 
-import { Ellipse } from "@/components/(dashboard)/canvas/shapes/elipse";
 import { Frame } from "@/components/(dashboard)/canvas/shapes/frame";
 import { Rectangle } from "@/components/(dashboard)/canvas/shapes/rectangle";
+import { Ellipse } from "@/components/(dashboard)/canvas/shapes/elipse";
 import { Stroke } from "@/components/(dashboard)/canvas/shapes/stroke";
 import { Arrow } from "@/components/(dashboard)/canvas/shapes/arrow";
 import { Line } from "@/components/(dashboard)/canvas/shapes/line";
 import { Text } from "@/components/(dashboard)/canvas/shapes/text";
+import { GeneratedUI } from "@/components/(dashboard)/canvas/shapes/generated-ui";
 import { SelectionOverlay } from "@/components/(dashboard)/canvas/selection";
 import Toolbar from "@/components/(dashboard)/canvas/toolbar";
 import UndoRedoControls from "@/components/(dashboard)/canvas/undo-redo";
@@ -575,6 +576,8 @@ export default function CanvasPage() {
                 return (
                   <Text key={shape.id} shape={shape} isSelected={isSelected} />
                 );
+              case "generatedui":
+                return <GeneratedUI key={shape.id} shape={shape} />;
               default:
                 return null;
             }
