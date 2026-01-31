@@ -1,5 +1,6 @@
 "use client";
 
+import Pusher from "pusher-js";
 import { Frame } from "@/components/(dashboard)/canvas/shapes/frame";
 import { Rectangle } from "@/components/(dashboard)/canvas/shapes/rectangle";
 import { Ellipse } from "@/components/(dashboard)/canvas/shapes/elipse";
@@ -32,6 +33,7 @@ import {
   setTool,
   loadProject,
   clearAll,
+  addGeneratedUI,
 } from "@/redux/slices/shapes";
 import {
   pushToHistory,
@@ -92,6 +94,23 @@ export default function CanvasPage() {
     1500,
     isLoaded,
   );
+
+  useEffect(() => {
+    // Subscribe
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER!,
+    });
+    const channel = pusher.subscribe(`project-${projectId}`);
+    // Listen for event
+    channel.bind("ui-generated", (data: any) => {
+      console.log("Realtime update received:", data);
+      dispatch(addGeneratedUI(data)); // Push to Redux
+    });
+    // Cleanup
+    return () => {
+      pusher.unsubscribe(`project-${projectId}`);
+    };
+  }, [projectId, dispatch]);
 
   useEffect(() => {
     // Clear existing state immediately to prevent "flashing" or leakage of previous project data

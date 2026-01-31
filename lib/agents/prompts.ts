@@ -336,42 +336,48 @@ export const userPrompts = {
     Extract colors that work harmoniously together and create typography that matches the aesthetic. Return ONLY the JSON object matching the exact schema structure above.`,
 
   generateUi: (colors: any[], typography: any[]) =>
-    `Use the user-provided styleGuide for all visual decisions: map its colors, typography scale, spacing, and radii directly to Tailwind v4 utilities (use arbitrary color classes like text-[#RRGGBB] / bg-[#RRGGBB] when hexes are given), enforce WCAG AA contrast (≥4.5:1 body, ≥3:1 large text), and if any token is missing fall back to neutral light defaults. Never invent new tokens; keep usage consistent across components.
+    `Use the user-provided styleGuide for all visual decisions. You must strictly adhere to the following rules:
+
+1.  **Color Mapping (CRITICAL)**: You must ONLY use the provided custom classes. Do NOT use arbitrary Tailwind colors (e.g., bg-[#...], text-blue-500).
+    *   Map 'background' → .c-bg / .c-fg
+    *   Map 'primary' → .c-primary-bg / .c-primary-fg
+    *   Map 'secondary' → .c-secondary-bg / .c-secondary-fg
+    *   Map 'accent' → .c-accent-bg / .c-accent-fg
+    *   Map 'muted' → .c-muted-bg / .c-muted-fg
+    *   Map 'card' → .c-card-bg / .c-card-fg
+
+2.  **Typography**: Use the provided font families.
+    *   Add a global style rule in your <style> block: \`body { font-family: 'YOUR_FONT_FAMILY', sans-serif; }\` replacing 'YOUR_FONT_FAMILY' with the primary font from the guide.
+
+3.  **Consistency**: If a specific token is missing, fall back to sensible defaults (neutral styling), but prefer the provided tokens.
 
 Inspiration images (URLs):
+You will receive up to 6 image URLs. Use them ONLY for layout and content inspiration. Do NOT extract colors from them. The Style Guide below is the SOURCE OF TRUTH for colors.
 
-You will receive up to 6 image URLs in images[].
+**Style Guide (SOURCE OF TRUTH):**
 
-Use them only for interpretation (mood/keywords/subject matter) to bias choices within the existing styleGuide tokens (e.g., which primary/secondary to emphasize, where accent appears, light vs. dark sections).
-
-Do not derive new colors or fonts from images; do not create tokens that aren't in styleGuide.
-
-Do not echo the URLs in the output JSON; use them purely as inspiration.
-
-If an image URL is unreachable/invalid, ignore it without degrading output quality.
-
-If images imply low-contrast contexts, adjust class pairings (e.g., text-[#FFFFFF] on bg-[#0A0A0A], stronger border/ring from tokens) to maintain accessibility while staying inside the styleGuide.
-
-For any required illustrative slots, use a public placeholder image (deterministic seed) only if the schema requires an image field; otherwise don't include images in the JSON.
-
-On conflicts: the styleGuide always wins over image cues.
-    colors: ${colors
-      .map((color: any) =>
-        color.swatches
-          .map((swatch: any) => {
-            return `${swatch.name}: ${swatch.hexColor}, ${swatch.description}`;
-          })
-          .join(", "),
+**Colors:**
+${colors
+  .map((color: any) => {
+    return color.swatches
+      .map(
+        (swatch: any) =>
+          `- ${swatch.name}: ${swatch.hexColor} (${swatch.description})`,
       )
-      .join(", ")}
-    typography: ${typography
-      .map((typography: any) =>
-        typography.styles
-          .map((style: any) => {
-            return `${style.name}: ${style.description}, ${style.fontFamily}, ${style.fontWeight}, ${style.fontSize}, ${style.lineHeight}`;
-          })
-          .join(", "),
+      .join("\n");
+  })
+  .join("\n")}
+
+**Typography:**
+${typography
+  .map((t: any) => {
+    return t.styles
+      .map(
+        (s: any) =>
+          `- ${s.name}: ${s.fontFamily} (${s.fontWeight}, ${s.fontSize})`,
       )
-      .join(", ")}
+      .join("\n");
+  })
+  .join("\n")}
     `,
 };

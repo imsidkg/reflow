@@ -224,6 +224,7 @@ export const generateStyleGuide = inngest.createFunction(
 );
 
 import { generativeUiAgent } from "@/lib/agents";
+import { pusherServer } from "@/lib/pusher";
 
 export const generateUI = inngest.createFunction(
   { id: "generate-ui", name: "Generate UI from Wireframe" },
@@ -376,6 +377,15 @@ Ignore the image URLs in the prompt text below as I have provided the actual ima
               where: { projectId },
               data: { shapes: shapesFn },
             });
+            if (shapeId) {
+              await pusherServer.trigger(
+                `project-${projectId}`,
+                "ui-generated",
+                {
+                  ...newShape, // The shape object you just created
+                },
+              );
+            }
           }
         }
       }

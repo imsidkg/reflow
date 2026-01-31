@@ -48,7 +48,7 @@ export default function StyleGuidePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "colours" | "typography" | "moodboard"
+    "colours" | "typografileInputRefphy" | "moodboard"
   >("colours");
   const [slideIndex, setSlideIndex] = useState(0);
 
