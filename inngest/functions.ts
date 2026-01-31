@@ -337,24 +337,24 @@ export const generateUI = inngest.createFunction(
     // 3. Execute Generation in Parallel
     const steps = workflowPlan.steps || [];
 
-    // We run all generations in ONE step to allow Promise.all parallelization.
-    // Inngest steps run sequentially, so we can't loop step.run.
-    // Instead we do the parallel work inside one step.
     const generatedIds = await step.run(
       "generate-screens-parallel",
       async () => {
-        const generationPromises = steps.map(
-          async (workflowStep: any, i: number) => {
-            console.log(
-              `Starting generation for Step ${i + 1}: ${workflowStep.title}`,
-            );
+        console.time("Total Parallel Generation Time");
 
-            const basePrompt = userPrompts.generateUi(
-              [{ swatches: colors || [] }],
-              [{ styles: typography || [] }],
-            );
+        // A. Start all AI allocations in parallel
+        const aiPromises = steps.map(async (workflowStep: any, i: number) => {
+          console.log(
+            `[Parallel] Starting AI generation for Step ${i + 1}: ${workflowStep.title}`,
+          );
+          console.time(`AI Gen Step ${i + 1}`);
 
-            const fullPrompt = `${basePrompt}
+          const basePrompt = userPrompts.generateUi(
+            [{ swatches: colors || [] }],
+            [{ styles: typography || [] }],
+          );
+
+          const fullPrompt = `${basePrompt}
 
 Wireframe Data (Context):
 ${JSON.stringify(sourceWireframeData)}
@@ -369,6 +369,8 @@ Generate the HTML based on the style guide.
 Ignore the image URLs in the prompt text below as I have provided the actual image data above.
 `;
 
+          try {
+            // Create a fresh model instance for each request to avoid shared state issues
             const model = genAI.getGenerativeModel({
               model: "gemini-2.0-flash",
               generationConfig: {
@@ -384,71 +386,104 @@ Ignore the image URLs in the prompt text below as I have provided the actual ima
             let text = response.text();
             text = text.replace(/```html/g, "").replace(/```/g, "");
 
-            // SAVE
-            const htmlContent =
-              typeof text === "string" ? text : JSON.stringify(text);
+            console.timeEnd(`AI Gen Step ${i + 1}`);
 
-            const generatedUIRecord = await prisma.generatedUI.create({
-              data: {
-                projectId,
-                html: htmlContent,
-                name: `${workflowStep.title} - ${new Date().toLocaleString()}`,
-              },
-            });
+            return {
+              index: i,
+              workflowStep,
+              html: typeof text === "string" ? text : JSON.stringify(text),
+              success: true,
+            };
+          } catch (error) {
+            console.error(`AI Generation failed for step ${i}:`, error);
+            console.timeEnd(`AI Gen Step ${i + 1}`);
+            return { index: i, workflowStep, success: false, error };
+          }
+        });
 
-            // UPDATE CANVAS
-            if (shapeId && sourceShape) {
-              const currentCanvas = await prisma.canvas.findUnique({
-                where: { projectId },
-                select: { shapes: true },
-              });
+        // B. Wait for ALL AI to finish
+        const results = await Promise.all(aiPromises);
+        console.timeEnd("Total Parallel Generation Time");
 
-              if (currentCanvas?.shapes) {
-                const shapesFn = currentCanvas.shapes as any;
-                const newShapeId = crypto.randomUUID();
+        const validResults = results.filter((r) => r.success);
 
-                // Layout: Place subsequent screens to the right
-                const gap = 50;
-                const offsetX = (i + 1) * (sourceShape.w + gap); // Shift starting from 1st offset
-
-                const newShape = {
-                  id: newShapeId,
-                  type: "generatedui",
-                  x: sourceShape.x + offsetX, // Dynamic X
-                  y: sourceShape.y, // Align Top
-                  w: sourceShape.w,
-                  h: sourceShape.h,
-                  uiSpecData: htmlContent,
-                  sourceFrameId: shapeId,
-                  stroke: "transparent",
-                  strokeWidth: 0,
-                  fill: null,
-                  title: workflowStep.title,
-                };
-
-                shapesFn.ids.push(newShapeId);
-                shapesFn.entities[newShapeId] = newShape;
-
-                await prisma.canvas.update({
-                  where: { projectId },
-                  data: { shapes: shapesFn },
-                });
-
-                // TRIGGER PUSHER
-                await pusherServer.trigger(
-                  `project-${projectId}`,
-                  "ui-generated",
-                  {
-                    ...newShape,
-                  },
-                );
-              }
-            }
-            return generatedUIRecord.id;
-          },
+        console.log(
+          `[Parallel] AI Finished. Saving ${validResults.length} generated screens sequentially...`,
         );
 
-        return await Promise.all(generationPromises);
+        // C. Save to DB Sequentially (to avoid Race Conditions on Canvas JSON)
+        const savedIds: string[] = [];
+
+        for (const res of validResults) {
+          const { index, workflowStep, html } = res as any;
+          console.log(
+            `[Saving] Persisting Step ${index + 1}: ${workflowStep.title}`,
+          );
+
+          // 1. Create Record
+          const generatedUIRecord = await prisma.generatedUI.create({
+            data: {
+              projectId,
+              html,
+              name: `${workflowStep.title} - ${new Date().toLocaleString()}`,
+            },
+          });
+
+          // 2. Update Canvas (Safe because we are in a loop)
+          if (shapeId && sourceShape) {
+            // Re-fetch canvas every time to ensure we have the LATEST version (avoid overwrites)
+            const currentCanvas = await prisma.canvas.findUnique({
+              where: { projectId },
+              select: { shapes: true },
+            });
+
+            if (currentCanvas?.shapes) {
+              const shapesFn = currentCanvas.shapes as any;
+              const newShapeId = crypto.randomUUID();
+
+              // Layout: Place subsequent screens to the right
+              const gap = 50;
+              const offsetX = (index + 1) * (sourceShape.w + gap);
+
+              const newShape = {
+                id: newShapeId,
+                type: "generatedui",
+                x: sourceShape.x + offsetX,
+                y: sourceShape.y,
+                w: sourceShape.w,
+                h: sourceShape.h,
+                uiSpecData: html,
+                sourceFrameId: shapeId,
+                stroke: "transparent",
+                strokeWidth: 0,
+                fill: null,
+                title: workflowStep.title,
+              };
+
+              shapesFn.ids.push(newShapeId);
+              shapesFn.entities[newShapeId] = newShape;
+
+              await prisma.canvas.update({
+                where: { projectId },
+                data: { shapes: shapesFn },
+              });
+
+              // 3. Trigger Pusher
+              console.log(
+                `[Pusher] Triggering ui-generated for Step ${index + 1}`,
+              );
+              await pusherServer.trigger(
+                `project-${projectId}`,
+                "ui-generated",
+                { ...newShape },
+              );
+
+              savedIds.push(newShapeId);
+            }
+          }
+        }
+
+        return savedIds;
       },
     );
 
