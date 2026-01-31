@@ -18,7 +18,8 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 export function useDebouncedSave(
   data: CanvasData,
   projectId: string,
-  delay: number = 1500
+  delay: number = 1500,
+  shouldSave: boolean = true,
 ) {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const isFirstRender = useRef(true);
@@ -48,12 +49,17 @@ export function useDebouncedSave(
         setStatus("error");
       }
     },
-    [projectId]
+    [projectId],
   );
 
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
+      lastSavedData.current = JSON.stringify(data);
+      return;
+    }
+
+    if (!shouldSave) {
       lastSavedData.current = JSON.stringify(data);
       return;
     }
@@ -68,7 +74,7 @@ export function useDebouncedSave(
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [data, delay, saveToDatabase]);
+  }, [data, delay, saveToDatabase, shouldSave]);
 
   return { status };
 }

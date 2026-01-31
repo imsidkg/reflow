@@ -31,6 +31,7 @@ import {
   loadShapes,
   setTool,
   loadProject,
+  clearAll,
 } from "@/redux/slices/shapes";
 import {
   pushToHistory,
@@ -84,15 +85,30 @@ export default function CanvasPage() {
     ],
   );
 
-  const { status: saveStatus } = useDebouncedSave(canvasSnapshot, projectId);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const { status: saveStatus } = useDebouncedSave(
+    canvasSnapshot,
+    projectId,
+    1500,
+    isLoaded,
+  );
 
   useEffect(() => {
+    // Clear existing state immediately to prevent "flashing" or leakage of previous project data
+    dispatch(clearAll());
+    dispatch(clearHistory());
+    setIsLoaded(false);
+
     const loadCanvas = async () => {
       try {
         const response = await fetch(`/api/project/${projectId}/canvas`);
-        if (!response.ok) return;
+        if (!response.ok) {
+          setIsLoaded(true); // Enable saving even if load failed (will start fresh)
+          return;
+        }
 
         const data = await response.json();
+
         if (data.canvas) {
           dispatch(
             loadProject({
@@ -106,9 +122,15 @@ export default function CanvasPage() {
             dispatch(restoreViewport(data.canvas.viewport));
           }
           dispatch(clearHistory());
+        } else {
+          // New project with no data: Ensure state is clean
+          dispatch(clearAll());
+          dispatch(clearHistory());
         }
       } catch (error) {
         console.error("Failed to load canvas:", error);
+      } finally {
+        setIsLoaded(true);
       }
     };
 
