@@ -112,6 +112,7 @@ interface ShapesState {
   shapes: EntityState<Shape, string>;
   selected: SelectionMap;
   frameCounter: number;
+  isGeneratingWorkflow: boolean;
 }
 
 const initialState: ShapesState = {
@@ -119,6 +120,7 @@ const initialState: ShapesState = {
   shapes: shapesAdapter.getInitialState(),
   selected: {},
   frameCounter: 0,
+  isGeneratingWorkflow: false,
 };
 
 const DEFAULTS = { stroke: "#ffff", strokeWidth: 2 as const };
@@ -315,7 +317,7 @@ const shapesSlice = createSlice({
       state,
       action: PayloadAction<
         Omit<Parameters<typeof makeFrame>[0], "frameNumber">
-      >
+      >,
     ) {
       state.frameCounter += 1;
       const frameWithNumber = {
@@ -329,13 +331,13 @@ const shapesSlice = createSlice({
     },
     addEllipse(
       state,
-      action: PayloadAction<Parameters<typeof makeEllipse>[0]>
+      action: PayloadAction<Parameters<typeof makeEllipse>[0]>,
     ) {
       shapesAdapter.addOne(state.shapes, makeEllipse(action.payload));
     },
     addFreeDrawShape(
       state,
-      action: PayloadAction<Parameters<typeof makeFree>[0]>
+      action: PayloadAction<Parameters<typeof makeFree>[0]>,
     ) {
       const { points } = action.payload;
       if (!points || points.length === 0) return;
@@ -352,14 +354,14 @@ const shapesSlice = createSlice({
     },
     addGeneratedUI(
       state,
-      action: PayloadAction<Parameters<typeof makeGeneratedUI>[0]>
+      action: PayloadAction<Parameters<typeof makeGeneratedUI>[0]>,
     ) {
       shapesAdapter.addOne(state.shapes, makeGeneratedUI(action.payload));
     },
 
     updateShape(
       state,
-      action: PayloadAction<{ id: string; patch: Partial<Shape> }>
+      action: PayloadAction<{ id: string; patch: Partial<Shape> }>,
     ) {
       const { id, patch } = action.payload;
       shapesAdapter.updateOne(state.shapes, { id, changes: patch });
@@ -406,7 +408,7 @@ const shapesSlice = createSlice({
         tool: Tool;
         selected: SelectionMap;
         frameCounter: number;
-      }>
+      }>,
     ) {
       state.shapes = action.payload.shapes;
       state.tool = action.payload.tool;
@@ -416,6 +418,9 @@ const shapesSlice = createSlice({
     loadShapes(state, action: PayloadAction<EntityState<Shape, string>>) {
       state.shapes = action.payload;
       state.selected = {};
+    },
+    setGeneratingWorkflow(state, action: PayloadAction<boolean>) {
+      state.isGeneratingWorkflow = action.payload;
     },
   },
 });
@@ -440,6 +445,7 @@ export const {
   deleteSelected,
   loadProject,
   loadShapes,
+  setGeneratingWorkflow,
 } = shapesSlice.actions;
 
 export default shapesSlice.reducer;

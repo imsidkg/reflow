@@ -4,6 +4,8 @@ import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { userPrompts } from "@/lib/agents/prompts";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { extractKeyFromUrl } from "@/lib/s3-uploads";
+import { generativeUiAgent, workflowAgent } from "@/lib/agents";
+import { pusherServer } from "@/lib/pusher";
 
 const genAI = new GoogleGenerativeAI(
   process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY!,
@@ -223,9 +225,6 @@ export const generateStyleGuide = inngest.createFunction(
   },
 );
 
-import { generativeUiAgent } from "@/lib/agents";
-import { pusherServer } from "@/lib/pusher";
-
 export const generateUI = inngest.createFunction(
   { id: "generate-ui", name: "Generate UI from Wireframe" },
   { event: "ui/generate" },
@@ -255,9 +254,57 @@ export const generateUI = inngest.createFunction(
     if (!data.styleGuide) throw new Error("Style guide missing");
     if (!data.canvas) throw new Error("Canvas missing");
 
-    const result = await step.run("generate-with-gemini", async () => {
-      // 1. Download images from S3
-      const imagesParts = await Promise.all(
+    // 0. Filter for specific shape if ID provided to get context
+    let sourceWireframeData: any = null;
+    let sourceShape: any = null;
+    let basePrompt = "";
+
+    if (shapeId && (data.canvas?.shapes as any)?.ids?.includes(shapeId)) {
+      const entities = (data.canvas?.shapes as any).entities;
+      sourceShape = entities[shapeId];
+      sourceWireframeData = sourceShape;
+      console.log("Found source shape:", sourceShape?.id);
+    } else {
+      console.warn("Source shape NOT found for ID:", shapeId);
+    }
+
+    const colors = data.styleGuide?.colors as any[];
+    const typography = data.styleGuide?.typography as any[];
+
+    // 1. Plan the Workflow
+    const workflowPlan = await step.run("plan-workflow", async () => {
+      const prompt = userPrompts.generateWorkflow(
+        sourceWireframeData
+          ? JSON.stringify(sourceWireframeData)
+          : "Generic Web App",
+      );
+      const result = await workflowAgent.run(prompt);
+      try {
+        // Attempt to parse if it's a string, otherwise assume object
+        return typeof result === "string"
+          ? JSON.parse(
+              (result as string).replace(/```json/g, "").replace(/```/g, ""),
+            )
+          : result;
+      } catch (e) {
+        console.error("Failed to parse workflow plan", e);
+        // Fallback to single step if parsing fails
+        return {
+          steps: [
+            {
+              title: "Generated UI",
+              description: "Generate the UI based on the wireframe",
+            },
+          ],
+        };
+      }
+    });
+
+    console.log("Workflow Plan:", workflowPlan);
+
+    // 2. Download images from S3 (Once for all steps)
+    const imagesParts = await step.run("download-images", async () => {
+      return await Promise.all(
         data.moodBoards.map(async (mb) => {
           try {
             const key = extractKeyFromUrl(mb.url);
@@ -276,7 +323,7 @@ export const generateUI = inngest.createFunction(
             return {
               inlineData: {
                 data: Buffer.from(byteArray).toString("base64"),
-                mimeType: "image/png", // Assuming PNG, but could assume based on file extension if needed
+                mimeType: "image/png",
               },
             };
           } catch (error) {
@@ -285,114 +332,133 @@ export const generateUI = inngest.createFunction(
           }
         }),
       ).then((parts) => parts.filter((p) => p !== null));
+    });
 
-      const colors = data.styleGuide?.colors as any[];
-      const typography = data.styleGuide?.typography as any[];
+    // 3. Execute Generation in Parallel
+    const steps = workflowPlan.steps || [];
 
-      const basePrompt = userPrompts.generateUi(
-        [{ swatches: colors || [] }],
-        [{ styles: typography || [] }],
-      );
+    // We run all generations in ONE step to allow Promise.all parallelization.
+    // Inngest steps run sequentially, so we can't loop step.run.
+    // Instead we do the parallel work inside one step.
+    const generatedIds = await step.run(
+      "generate-screens-parallel",
+      async () => {
+        const generationPromises = steps.map(
+          async (workflowStep: any, i: number) => {
+            console.log(
+              `Starting generation for Step ${i + 1}: ${workflowStep.title}`,
+            );
 
-      // Filter for specific shape if ID provided
-      let wireframeData = data.canvas?.shapes;
-      if (shapeId && (data.canvas?.shapes as any)?.ids?.includes(shapeId)) {
-        const entities = (data.canvas?.shapes as any).entities;
-        wireframeData = entities[shapeId];
-      }
+            const basePrompt = userPrompts.generateUi(
+              [{ swatches: colors || [] }],
+              [{ styles: typography || [] }],
+            );
 
-      const fullPrompt = `${basePrompt}
+            const fullPrompt = `${basePrompt}
 
-Wireframe Data:
-${JSON.stringify(wireframeData)}
+Wireframe Data (Context):
+${JSON.stringify(sourceWireframeData)}
+
+Task:
+Generate the screen for: "${workflowStep.title}".
+Description: ${workflowStep.description}.
+Use the wireframe as a loose layout guide but adapt it for this specific screen's purpose.
 
 Instructions:
-Generate the HTML based on the wireframe and style guide. 
+Generate the HTML based on the style guide. 
 Ignore the image URLs in the prompt text below as I have provided the actual image data above.
 `;
 
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
-        generationConfig: {
-          responseMimeType: "text/plain", // We want HTML string, not JSON
-        },
-      });
-
-      // Pass both text prompt and image parts
-      const result = await model.generateContent([fullPrompt, ...imagesParts]);
-      const response = await result.response;
-      let text = response.text();
-
-      // Clean up markdown code blocks if present
-      text = text.replace(/```html/g, "").replace(/```/g, "");
-
-      return text;
-    });
-
-    const storedUI = await step.run("save-result", async () => {
-      const htmlContent =
-        typeof result === "string" ? result : JSON.stringify(result);
-
-      // 1. Create the persistent record
-      const generatedUIRecord = await prisma.generatedUI.create({
-        data: {
-          projectId,
-          html: htmlContent,
-          name: `Generated UI - ${new Date().toLocaleString()}`,
-        },
-      });
-
-      // 2. If we have a source shape, add it to the canvas
-      if (shapeId) {
-        const currentCanvas = await prisma.canvas.findUnique({
-          where: { projectId },
-          select: { shapes: true },
-        });
-
-        if (currentCanvas?.shapes) {
-          const shapesFn = currentCanvas.shapes as any;
-          const sourceShape = shapesFn.entities[shapeId];
-
-          if (sourceShape) {
-            const newShapeId = crypto.randomUUID();
-            const newShape = {
-              id: newShapeId,
-              type: "generatedui",
-              x: sourceShape.x,
-              y: sourceShape.y,
-              w: sourceShape.w,
-              h: sourceShape.h,
-              uiSpecData: htmlContent,
-              sourceFrameId: shapeId,
-              stroke: "transparent",
-              strokeWidth: 0,
-              fill: null,
-            };
-
-            // Update shapes JSON
-            shapesFn.ids.push(newShapeId);
-            shapesFn.entities[newShapeId] = newShape;
-
-            await prisma.canvas.update({
-              where: { projectId },
-              data: { shapes: shapesFn },
+            const model = genAI.getGenerativeModel({
+              model: "gemini-2.0-flash",
+              generationConfig: {
+                responseMimeType: "text/plain",
+              },
             });
-            if (shapeId) {
-              await pusherServer.trigger(
-                `project-${projectId}`,
-                "ui-generated",
-                {
-                  ...newShape, // The shape object you just created
-                },
-              );
-            }
-          }
-        }
-      }
 
-      return generatedUIRecord;
+            const result = await model.generateContent([
+              fullPrompt,
+              ...imagesParts,
+            ]);
+            const response = await result.response;
+            let text = response.text();
+            text = text.replace(/```html/g, "").replace(/```/g, "");
+
+            // SAVE
+            const htmlContent =
+              typeof text === "string" ? text : JSON.stringify(text);
+
+            const generatedUIRecord = await prisma.generatedUI.create({
+              data: {
+                projectId,
+                html: htmlContent,
+                name: `${workflowStep.title} - ${new Date().toLocaleString()}`,
+              },
+            });
+
+            // UPDATE CANVAS
+            if (shapeId && sourceShape) {
+              const currentCanvas = await prisma.canvas.findUnique({
+                where: { projectId },
+                select: { shapes: true },
+              });
+
+              if (currentCanvas?.shapes) {
+                const shapesFn = currentCanvas.shapes as any;
+                const newShapeId = crypto.randomUUID();
+
+                // Layout: Place subsequent screens to the right
+                const gap = 50;
+                const offsetX = (i + 1) * (sourceShape.w + gap); // Shift starting from 1st offset
+
+                const newShape = {
+                  id: newShapeId,
+                  type: "generatedui",
+                  x: sourceShape.x + offsetX, // Dynamic X
+                  y: sourceShape.y, // Align Top
+                  w: sourceShape.w,
+                  h: sourceShape.h,
+                  uiSpecData: htmlContent,
+                  sourceFrameId: shapeId,
+                  stroke: "transparent",
+                  strokeWidth: 0,
+                  fill: null,
+                  title: workflowStep.title,
+                };
+
+                shapesFn.ids.push(newShapeId);
+                shapesFn.entities[newShapeId] = newShape;
+
+                await prisma.canvas.update({
+                  where: { projectId },
+                  data: { shapes: shapesFn },
+                });
+
+                // TRIGGER PUSHER
+                await pusherServer.trigger(
+                  `project-${projectId}`,
+                  "ui-generated",
+                  {
+                    ...newShape,
+                  },
+                );
+              }
+            }
+            return generatedUIRecord.id;
+          },
+        );
+
+        return await Promise.all(generationPromises);
+      },
+    );
+
+    // 4. Notify Workflow Complete
+    await step.run("notify-complete", async () => {
+      await pusherServer.trigger(`project-${projectId}`, "workflow-complete", {
+        count: generatedIds.length,
+      });
     });
 
-    return { success: true, id: storedUI.id };
+    return { success: true, count: generatedIds.length };
   },
 );

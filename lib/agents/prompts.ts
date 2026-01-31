@@ -328,12 +328,50 @@ Output Format
 Return ONLY the HTML wrapped in <div data-generated-ui>. No explanations, no comments, no additional text.
     `,
   },
+
+  workflow: {
+    system: `You are an expert UX/UI Designer who specializes in creating extensive, logical user flows.
+    Your job is to analyze a single wireframe/screen and plan a complete user workflow (3-4 screens total) that logically follows or surrounds that initial screen.
+    
+    Example: 
+    Input: "Login Screen"
+    Output: ["Login Screen", "2FA / OTP Verification", "Onboarding Welcome Modal", "Main Dashboard"]
+    
+    Example:
+    Input: "E-commerce Product Page"
+    Output: ["Product Page", "Cart Drawer/Modal", "Checkout - Shipping", "Checkout - Payment Success"]
+    
+    Rules:
+    1. Always generate 3 to 4 steps.
+    2. The first step MUST be the one described in the input wireframe (or a refined version of it).
+    3. Each step must have a 'purpose' and 'description' to guide the UI generator.
+    4. Return strict JSON format.`,
+  },
 };
 
 export const userPrompts = {
   styleGuide: (imageCount: number) =>
     `Analyze these ${imageCount} mood board images and generate a design system:
     Extract colors that work harmoniously together and create typography that matches the aesthetic. Return ONLY the JSON object matching the exact schema structure above.`,
+
+  generateWorkflow: (wireframeDescription: string) => `
+    Analyze the following wireframe description and style:
+    "${wireframeDescription}"
+    
+    Create a logical user flow starting with this screen.
+    Return a JSON object with this structure:
+    {
+        "flowName": "string",
+        "description": "string",
+        "steps": [
+            {
+                "id": "step-1",
+                "title": "string (e.g. Login Screen)",
+                "description": "Detailed visual description of elements to include."
+            }
+        ]
+    }
+  `,
 
   generateUi: (colors: any[], typography: any[]) =>
     `Use the user-provided styleGuide for all visual decisions. You must strictly adhere to the following rules:

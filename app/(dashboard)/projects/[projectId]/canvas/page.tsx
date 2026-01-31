@@ -34,6 +34,7 @@ import {
   loadProject,
   clearAll,
   addGeneratedUI,
+  setGeneratingWorkflow,
 } from "@/redux/slices/shapes";
 import {
   pushToHistory,
@@ -100,12 +101,27 @@ export default function CanvasPage() {
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER!,
     });
-    const channel = pusher.subscribe(`project-${projectId}`);
-    // Listen for event
-    channel.bind("ui-generated", (data: any) => {
-      console.log("Realtime update received:", data);
-      dispatch(addGeneratedUI(data)); // Push to Redux
+
+    pusher.connection.bind("connected", () => {
+      console.log("Pusher connected to channel.");
     });
+    pusher.connection.bind("error", (err: any) => {
+      console.error("Pusher connection error:", err);
+    });
+
+    const channel = pusher.subscribe(`project-${projectId}`);
+
+    // Listen for events
+    channel.bind("ui-generated", (data: any) => {
+      console.log("Realtime update received (ui-generated):", data);
+      dispatch(addGeneratedUI(data));
+    });
+
+    channel.bind("workflow-complete", (data: any) => {
+      console.log("Workflow generation complete:", data);
+      dispatch(setGeneratingWorkflow(false));
+    });
+
     // Cleanup
     return () => {
       pusher.unsubscribe(`project-${projectId}`);
