@@ -262,7 +262,13 @@ export const generateUI = inngest.createFunction(
     if (shapeId && (data.canvas?.shapes as any)?.ids?.includes(shapeId)) {
       const entities = (data.canvas?.shapes as any).entities;
       sourceShape = entities[shapeId];
-      sourceWireframeData = sourceShape;
+      // Sanitize sourceWireframeData immediately to remove heavy fields
+      if (sourceShape) {
+        const { uiSpecData, html, data, ...rest } = sourceShape;
+        sourceWireframeData = rest;
+      } else {
+        sourceWireframeData = sourceShape;
+      }
       console.log("Found source shape:", sourceShape?.id);
     } else {
       console.warn("Source shape NOT found for ID:", shapeId);
@@ -273,28 +279,58 @@ export const generateUI = inngest.createFunction(
 
     // 1. Plan the Workflow
     const workflowPlan = await step.run("plan-workflow", async () => {
-      const prompt = userPrompts.generateWorkflow(
-        sourceWireframeData
-          ? JSON.stringify(sourceWireframeData)
-          : "Generic Web App",
-      );
-      const result = await workflowAgent.run(prompt);
+      // sanitize sourceWireframeData to remove huge fields
+      let cleanData = "Generic Web App";
+      if (sourceWireframeData) {
+        const { uiSpecData, html, ...rest } = sourceWireframeData;
+        cleanData = JSON.stringify(rest);
+      }
+
+      const prompt = userPrompts.generateWorkflow(cleanData);
+
+      console.log("Planning workflow with data length:", cleanData.length);
+      console.time("Workflow Agent");
+
       try {
+        // Add timeout to prevent hanging
+        const result = await Promise.race([
+          workflowAgent.run(prompt),
+          new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Workflow planning timed out")),
+              45000,
+            ),
+          ),
+        ]);
+
+        console.timeEnd("Workflow Agent");
+        console.log(
+          "Raw Workflow Agent Result:",
+          JSON.stringify(result, null, 2),
+        );
+
         // Attempt to parse if it's a string, otherwise assume object
-        return typeof result === "string"
-          ? JSON.parse(
-              (result as string).replace(/```json/g, "").replace(/```/g, ""),
-            )
-          : result;
+        const parsed =
+          typeof result === "string"
+            ? JSON.parse(
+                (result as string).replace(/```json/g, "").replace(/```/g, ""),
+              )
+            : result;
+
+        return parsed;
       } catch (e) {
-        console.error("Failed to parse workflow plan", e);
-        // Fallback to single step if parsing fails
+        console.error("Failed to plan workflow or timed out", e);
+        console.timeEnd("Workflow Agent");
+
+        // Fallback to minimal diverse flow
         return {
           steps: [
+            { title: "Authentication", description: "Login or Sign up screen" },
             {
-              title: "Generated UI",
-              description: "Generate the UI based on the wireframe",
+              title: "Dashboard",
+              description: "Main user dashboard with overview",
             },
+            { title: "Settings", description: "User preferences and settings" },
           ],
         };
       }
@@ -359,10 +395,15 @@ export const generateUI = inngest.createFunction(
 Wireframe Data (Context):
 ${JSON.stringify(sourceWireframeData)}
 
-Task:
+TASK:
 Generate the screen for: "${workflowStep.title}".
 Description: ${workflowStep.description}.
-Use the wireframe as a loose layout guide but adapt it for this specific screen's purpose.
+
+CRITICAL INSTRUCTION:
+1. The Wireframe Data above is for STYLE and SPATIAL REFERENCE only.
+2. If the Task ("${workflowStep.title}") requires a different structure than the Wireframe (e.g. Task is "Dashboard" but Wireframe is "Login"), you MUST DISCARD the specific wireframe layout (inputs, buttons) and generate a correct layout for the Task.
+3. You represent the "Style" of the wireframe (colors, rounding, spacing) but you are FREE to change the "Structure" to fit the new screen type.
+4. DO NOT generate a Login page for a Dashboard task.
 
 Instructions:
 Generate the HTML based on the style guide. 
@@ -457,7 +498,10 @@ Ignore the image URLs in the prompt text below as I have provided the actual ima
                 stroke: "transparent",
                 strokeWidth: 0,
                 fill: null,
-                title: workflowStep.title,
+                title:
+                  workflowStep.title ||
+                  workflowStep.name ||
+                  `Step ${index + 1}`,
               };
 
               shapesFn.ids.push(newShapeId);

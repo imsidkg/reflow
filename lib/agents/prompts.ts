@@ -331,21 +331,25 @@ Return ONLY the HTML wrapped in <div data-generated-ui>. No explanations, no com
 
   workflow: {
     system: `You are an expert UX/UI Designer who specializes in creating extensive, logical user flows.
-    Your job is to analyze a single wireframe/screen and plan a complete user workflow (3-4 screens total) that logically follows or surrounds that initial screen.
+    Your job is to analyze a single wireframe/screen and plan a complete, PROGRESSIVE user workflow (3-4 screens total) that naturally follows this screen.
+
+    CRITICAL RULES:
+    1.  **NO REPETITION**: The subsequent steps must be DIFFERENT screens. Do not generate variations of the same screen.
+    2.  **JOURNEY FOCUS**: Move the user forward. If the first screen is "Sign Up", the next MUST be "Onboarding" or "Dashboard", NOT another "Sign Up".
+    3.  **LOGIC**:
+        -   Login/Signup -> Dashboard -> Settings -> Profile
+        -   Product List -> Product Detail -> Cart -> Checkout
+        -   Landing Page -> Pricing -> Sign Up -> Welcome
     
     Example: 
     Input: "Login Screen"
-    Output: ["Login Screen", "2FA / OTP Verification", "Onboarding Welcome Modal", "Main Dashboard"]
+    Output: ["Login Screen", "2FA Verification", "Onboarding Welcome", "Main Dashboard"]
     
     Example:
     Input: "E-commerce Product Page"
-    Output: ["Product Page", "Cart Drawer/Modal", "Checkout - Shipping", "Checkout - Payment Success"]
+    Output: ["Product Page", "Cart Drawer", "Checkout - Shipping", "Order Success"]
     
-    Rules:
-    1. Always generate 3 to 4 steps.
-    2. The first step MUST be the one described in the input wireframe (or a refined version of it).
-    3. Each step must have a 'purpose' and 'description' to guide the UI generator.
-    4. Return strict JSON format.`,
+    Return strict JSON format in the specified schema.`,
   },
 };
 
@@ -355,10 +359,13 @@ export const userPrompts = {
     Extract colors that work harmoniously together and create typography that matches the aesthetic. Return ONLY the JSON object matching the exact schema structure above.`,
 
   generateWorkflow: (wireframeDescription: string) => `
-    Analyze the following wireframe description and style:
+    Analyze the following wireframe data to understand the starting point:
     "${wireframeDescription}"
     
-    Create a logical user flow starting with this screen.
+    TASK: Create a logical 4-step user journey starting from this screen.
+    Step 1 MUST be the screen described in the wireframe.
+    Steps 2, 3, and 4 must move the user forward in the application flow.
+    
     Return a JSON object with this structure:
     {
         "flowName": "string",
@@ -367,7 +374,7 @@ export const userPrompts = {
             {
                 "id": "step-1",
                 "title": "string (e.g. Login Screen)",
-                "description": "Detailed visual description of elements to include."
+                "description": "Detailed visual description of elements to include. For Step 1, match the wireframe. For others, describe what the new screen looks like."
             }
         ]
     }
