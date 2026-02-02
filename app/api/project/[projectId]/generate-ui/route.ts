@@ -10,11 +10,19 @@ export async function POST(
   try {
     const body = await req.json();
     const { shapeId } = body;
+    console.log(
+      "[API] Received generate-ui request for shape:",
+      shapeId,
+      "project:",
+      projectId,
+    );
 
     await inngest.send({
       name: "ui/generate",
       data: { projectId, shapeId },
     });
+
+    console.log("[API] Inngest event sent successfully");
 
     return NextResponse.json({ success: true, message: "Started" });
   } catch (error) {

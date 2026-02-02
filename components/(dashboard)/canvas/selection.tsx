@@ -1,7 +1,15 @@
-import { Shape } from "@/redux/slices/shapes";
+import {
+  Shape,
+  FrameShape,
+  RectShape,
+  updateShape,
+  addGeneratedUI,
+  setGeneratingWorkflow,
+} from "@/redux/slices/shapes";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 
 interface SelectionOverlayProps {
   shape: Shape;
@@ -18,18 +26,25 @@ export const SelectionOverlay = ({
     switch (shape.type) {
       case "frame":
       case "rect":
-      case "ellipse":
       case "generatedui":
         return {
           x: shape.x,
           y: shape.y,
-          w: shape.w,
-          h: shape.h,
+          w: (shape as any).w,
+          h: (shape as any).h,
+        };
+      case "ellipse":
+        return {
+          x: shape.x,
+          y: shape.y,
+          w: (shape as any).rx * 2,
+          h: (shape as any).ry * 2,
         };
       case "freedraw":
-        if (shape.points.length === 0) return { x: 0, y: 0, w: 0, h: 0 };
-        const xs = shape.points.map((p) => p.x);
-        const ys = shape.points.map((p) => p.y);
+        if ((shape as any).points.length === 0)
+          return { x: 0, y: 0, w: 0, h: 0 };
+        const xs = (shape as any).points.map((p: any) => p.x);
+        const ys = (shape as any).points.map((p: any) => p.y);
         const minX = Math.min(...xs);
         const maxX = Math.max(...xs);
         const minY = Math.min(...ys);
@@ -72,24 +87,35 @@ export const SelectionOverlay = ({
   const bounds = getBounds();
 
   const { projectId } = useParams();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const dispatch = useAppDispatch();
+  const isGenerating = useAppSelector(
+    (state) => state.shapes.isGeneratingWorkflow,
+  );
 
   const handleGenerate = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsGenerating(true);
+    console.log("Generate UI clicked for shape:", shape.id);
+
+    // Set global loading state
+    dispatch(setGeneratingWorkflow(true));
+
     try {
+      console.log("Sending POST request to generate-ui...");
       const res = await fetch(`/api/project/${projectId}/generate-ui`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shapeId: shape.id }),
       });
+      console.log("Response status:", res.status);
       if (res.ok) {
         // Optimistic UI or toast
+        console.log("Request successful");
+      } else {
+        console.error("Request failed with status", res.status);
       }
     } catch (e) {
-      console.error(e);
-    } finally {
-      setTimeout(() => setIsGenerating(false), 2000);
+      console.error("Generate UI Error:", e);
+      dispatch(setGeneratingWorkflow(false)); // Reset if API call fails immediately
     }
   };
 
