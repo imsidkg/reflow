@@ -79,14 +79,22 @@ export async function PUT(
       if (dbShapes.entities && payloadShapes.entities) {
         Object.values(dbShapes.entities).forEach((shape: any) => {
           if (shape.type === "generatedui") {
-            // If this generated shape is NOT in the incoming payload, re-add it
+            // If this generated shape is NOT in the incoming payload, re-add it ONLY if it's new (race condition protection)
+            // If it's old (>30s), assume the user intentionall deleted it
             if (!payloadShapes.entities[shape.id]) {
-              console.log(
-                `[Smart Merge] Preserving generated shape ${shape.id} lost in auto-save`,
-              );
-              mergedShapes.entities[shape.id] = shape;
-              if (!mergedShapes.ids.includes(shape.id)) {
-                mergedShapes.ids.push(shape.id);
+              const createdAt = shape.createdAt || 0;
+              const isRecent = Date.now() - createdAt < 30000; // 30 seconds
+
+              if (isRecent) {
+                console.log(
+                  `[Smart Merge] Preserving generated shape ${shape.id} lost in auto-save (Created ${
+                    Date.now() - createdAt
+                  }ms ago)`,
+                );
+                mergedShapes.entities[shape.id] = shape;
+                if (!mergedShapes.ids.includes(shape.id)) {
+                  mergedShapes.ids.push(shape.id);
+                }
               }
             }
           }

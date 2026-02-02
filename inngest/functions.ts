@@ -502,6 +502,7 @@ Ignore the image URLs in the prompt text below as I have provided the actual ima
                   workflowStep.title ||
                   workflowStep.name ||
                   `Step ${index + 1}`,
+                createdAt: Date.now(),
               };
 
               shapesFn.ids.push(newShapeId);

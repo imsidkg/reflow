@@ -89,6 +89,7 @@ export interface GeneratedUIShape extends BaseShape {
   uiSpecData: string | null;
   sourceFrameId: string;
   isWorkflowPage?: boolean;
+  createdAt?: number; // Timestamp for race-condition handling
 }
 
 export type Shape =
