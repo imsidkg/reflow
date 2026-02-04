@@ -542,3 +542,124 @@ Ignore the image URLs in the prompt text below as I have provided the actual ima
     return { success: true, count: generatedIds.length };
   },
 );
+
+export const refineUI = inngest.createFunction(
+  { id: "refine-ui", name: "Refine Generated UI" },
+  { event: "ui/refine" },
+  async ({ event, step }) => {
+    const { projectId, shapeId, refinementPrompt, selectedElement } =
+      event.data;
+
+    const data = await step.run("fetch-shape", async () => {
+      const canvas = await prisma.canvas.findUnique({
+        where: { projectId },
+        select: { shapes: true },
+      });
+
+      if (!canvas?.shapes) throw new Error("Canvas missing");
+
+      const shapesFn = canvas.shapes as any;
+      const shape = shapesFn.entities[shapeId];
+
+      if (!shape) throw new Error("Shape not found");
+
+      // Also get style guide for reference
+      const styleGuide = await prisma.styleGuide.findUnique({
+        where: { projectId },
+      });
+
+      return { shape, styleGuide };
+    });
+
+    // Generate refined HTML
+    const result = await step.run("generate-refinement", async () => {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        generationConfig: {
+          responseMimeType: "text/plain",
+        },
+      });
+
+      const currentHtml = data.shape.uiSpecData;
+      const colors = data.styleGuide?.colors || [];
+      const typography = data.styleGuide?.typography || [];
+
+      let promptContext = "";
+      if (selectedElement) {
+        promptContext = `
+        USER SELECTED ELEMENT:
+        Tag: ${selectedElement.tagName}
+        Text: "${selectedElement.text}"
+        HTML: \`${selectedElement.html}\`
+        XPath/Location: ${selectedElement.xpath}
+
+        INSTRUCTION: Only apply changes to the selected element or elements related to it, unless the prompt implies a global change.
+        `;
+      } else {
+        promptContext = "INSTRUCTION: Apply changes to the entire UI design.";
+      }
+
+      const prompt = `
+      You are an expert UI engineer and designer.
+      
+      CURRENT HTML:
+      \`\`\`html
+      ${currentHtml}
+      \`\`\`
+
+      STYLE GUIDE CONTEXT:
+      Colors: ${JSON.stringify(colors)}
+      Typography: ${JSON.stringify(typography)}
+
+      ${promptContext}
+
+      USER REFINEMENT REQUEST: "${refinementPrompt}"
+
+      TASK:
+      1. Modify the HTML to satisfy the user's request.
+      2. Ensure you maintain the existing style system and only change what is requested.
+      3. Return the FULL updated HTML string.
+      4. Do NOT output markdown ticks (Example: no \`\`\`html). Just the raw HTML code.
+      `;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      let text = response.text();
+      // Cleanup
+      text = text.replace(/```html/g, "").replace(/```/g, "");
+      return text;
+    });
+
+    // Update DB
+    await step.run("update-canvas", async () => {
+      // Re-fetch to ensure atomicity/latest state
+      const canvas = await prisma.canvas.findUnique({
+        where: { projectId },
+        select: { shapes: true },
+      });
+
+      if (canvas?.shapes) {
+        const shapesFn = canvas.shapes as any;
+
+        // Update the specific shape
+        if (shapesFn.entities[shapeId]) {
+          shapesFn.entities[shapeId].uiSpecData = result;
+          // Update timestamp to force unexpected re-renders if needed
+          shapesFn.entities[shapeId].updatedAt = Date.now();
+        }
+
+        await prisma.canvas.update({
+          where: { projectId },
+          data: { shapes: shapesFn },
+        });
+
+        // Trigger pusher update
+        await pusherServer.trigger(`project-${projectId}`, "shape-updated", {
+          ...shapesFn.entities[shapeId],
+        });
+      }
+    });
+
+    return { success: true };
+  },
+);

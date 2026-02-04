@@ -7,7 +7,7 @@ import {
   setGeneratingWorkflow,
 } from "@/redux/slices/shapes";
 import { Sparkles, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 
@@ -157,6 +157,132 @@ export const SelectionOverlay = ({
           </button>
         </div>
       )}
+
+      {shape.type === "generatedui" && (
+        <DesignChatWrapper shape={shape} bounds={bounds} />
+      )}
     </>
   );
 };
+
+// Separate wrapper to manage chat state without re-rendering the main overlay too often
+import { DesignChat } from "./design-chat";
+import { MessageSquare } from "lucide-react";
+
+function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isInspecting, setIsInspecting] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<any>(null);
+  const [isRefining, setIsRefining] = useState(false);
+  const { projectId } = useParams();
+
+  // Listen for inspection events from the generated UI
+  useEffect(() => {
+    if (!isInspecting) return;
+
+    const handleElementSelected = (e: CustomEvent) => {
+      setSelectedElement(e.detail);
+      setIsOpen(true); // Open chat when element is clicked
+      setIsInspecting(false); // Turn off inspection mode
+    };
+
+    window.addEventListener(
+      `generated-ui-selected-${shape.id}`,
+      handleElementSelected as EventListener,
+    );
+
+    // Also trigger the inspection mode on the shape itself
+    const event = new CustomEvent(`set-inspection-mode-${shape.id}`, {
+      detail: { isInspecting },
+    });
+    window.dispatchEvent(event);
+
+    return () => {
+      window.removeEventListener(
+        `generated-ui-selected-${shape.id}`,
+        handleElementSelected as EventListener,
+      );
+    };
+  }, [isInspecting, shape.id]);
+
+  // Sync inspection mode changes when toggled from chat
+  useEffect(() => {
+    const event = new CustomEvent(`set-inspection-mode-${shape.id}`, {
+      detail: { isInspecting },
+    });
+    window.dispatchEvent(event);
+  }, [isInspecting, shape.id]);
+
+  const handleRefine = async (prompt: string) => {
+    setIsRefining(true);
+    try {
+      const res = await fetch(`/api/project/${projectId}/refine-ui`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shapeId: shape.id,
+          prompt,
+          selectedElement,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Refinement failed");
+      }
+    } catch (e) {
+      console.error("Refinement error", e);
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  return (
+    <>
+      {/* Trigger Button */}
+      <div
+        className="absolute flex items-center justify-end pointer-events-auto"
+        onPointerDown={(e) => e.stopPropagation()}
+        style={{
+          left: bounds.x,
+          top: bounds.y - 36,
+          width: bounds.w,
+        }}
+      >
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`flex items-center gap-1.5 text-xs transition-colors px-2 py-1.5 rounded-lg border backdrop-blur-md shadow-sm ${
+            isOpen
+              ? "bg-indigo-500 text-white border-indigo-400"
+              : "bg-black/40 text-white hover:bg-black/60 border-white/10"
+          }`}
+        >
+          <MessageSquare className="w-3 h-3" />
+          Design Chat
+        </button>
+      </div>
+
+      {/* Chat Interface */}
+      {isOpen && (
+        <div
+          className="absolute pointer-events-auto"
+          style={{
+            left: bounds.x + bounds.w + 10,
+            top: bounds.y,
+            zIndex: 100,
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <DesignChat
+            shape={shape}
+            onClose={() => setIsOpen(false)}
+            isInspecting={isInspecting}
+            setIsInspecting={setIsInspecting}
+            selectedElement={selectedElement}
+            onRefine={handleRefine}
+            isGenerating={isRefining}
+          />
+        </div>
+      )}
+    </>
+  );
+}

@@ -383,7 +383,9 @@ export const userPrompts = {
   generateUi: (colors: any[], typography: any[]) =>
     `Use the user-provided styleGuide for all visual decisions. You must strictly adhere to the following rules:
 
-1.  **Color Mapping (CRITICAL)**: You must ONLY use the provided custom classes. Do NOT use arbitrary Tailwind colors (e.g., bg-[#...], text-blue-500).
+1.  **Color Mapping (CRITICAL)**: You must ONLY use the provided custom classes.
+    *   **STRICT RULE**: Do NOT use arbitrary Tailwind colors (e.g., bg-[#...], text-blue-500).
+    *   **STRICT RULE**: Do NOT use any hex code that is not explicitly listed in the Style Guide below.
     *   Map 'background' → .c-bg / .c-fg
     *   Map 'primary' → .c-primary-bg / .c-primary-fg
     *   Map 'secondary' → .c-secondary-bg / .c-secondary-fg
@@ -391,10 +393,11 @@ export const userPrompts = {
     *   Map 'muted' → .c-muted-bg / .c-muted-fg
     *   Map 'card' → .c-card-bg / .c-card-fg
 
-2.  **Typography**: Use the provided font families.
+2.  **Typography (CRITICAL)**: Use the provided font families.
     *   Add a global style rule in your <style> block: \`body { font-family: 'YOUR_FONT_FAMILY', sans-serif; }\` replacing 'YOUR_FONT_FAMILY' with the primary font from the guide.
+    *   Do NOT use any other font family unless specified.
 
-3.  **Consistency**: If a specific token is missing, fall back to sensible defaults (neutral styling), but prefer the provided tokens.
+3.  **No Hallucinations**: If a color or font is missing from the guide, RE-USE an existing one. Do NOT invent new values.
 
 Inspiration images (URLs):
 You will receive up to 6 image URLs. Use them ONLY for layout and content inspiration. Do NOT extract colors from them. The Style Guide below is the SOURCE OF TRUTH for colors.
