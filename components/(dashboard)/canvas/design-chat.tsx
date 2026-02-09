@@ -60,11 +60,11 @@ export function DesignChat({
   };
 
   return (
-    <div className="absolute top-10 right-[-340px] w-80 rounded-2xl bg-zinc-950/90 backdrop-blur-xl border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-left-5 fade-in duration-200 z-50">
+    <div className="absolute top-10 right-[-340px] w-80 rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-left-5 fade-in duration-200 z-50">
       {/* Header */}
       <div className="p-3 border-b border-white/10 flex items-center justify-between bg-white/5">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+          <div className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400">
             <Sparkles className="w-4 h-4" />
           </div>
           <span className="text-sm font-medium text-white">
@@ -88,7 +88,7 @@ export function DesignChat({
             "flex items-center gap-3 p-3 rounded-xl border transition-all text-left group",
             isInspecting
               ? "bg-blue-500/20 border-blue-500/50 text-blue-200"
-              : "bg-zinc-900 border-white/10 text-zinc-400 hover:border-white/20 hover:text-zinc-300",
+              : "bg-zinc-800 border-white/10 text-zinc-400 hover:border-white/20 hover:text-zinc-300",
           )}
         >
           <div
@@ -96,7 +96,7 @@ export function DesignChat({
               "p-2 rounded-lg transition-colors",
               isInspecting
                 ? "bg-blue-500 text-white"
-                : "bg-zinc-800 text-zinc-500 group-hover:text-zinc-400",
+                : "bg-zinc-700 text-zinc-500 group-hover:text-zinc-400",
             )}
           >
             <MousePointer2 className="w-4 h-4" />
@@ -115,7 +115,7 @@ export function DesignChat({
 
         {/* Selected Context */}
         {selectedElement && (
-          <div className="p-3 rounded-lg bg-zinc-900 border border-white/10 animate-in fade-in zoom-in-95">
+          <div className="p-3 rounded-lg bg-zinc-800 border border-white/10 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-semibold">
                 Target Selected
@@ -128,7 +128,7 @@ export function DesignChat({
               </button>
             </div>
             <div className="flex items-center gap-2 text-zinc-300">
-              <span className="text-xs font-mono bg-zinc-800 px-1.5 py-0.5 rounded border border-white/5">
+              <span className="text-xs font-mono bg-zinc-700 px-1.5 py-0.5 rounded border border-white/5">
                 {selectedElement.tagName.toLowerCase()}
               </span>
               <span className="text-sm truncate max-w-[180px]">
@@ -152,13 +152,13 @@ export function DesignChat({
                 ? "How should I change this element?"
                 : "Describe changes for the whole design..."
             }
-            className="w-full bg-zinc-900 border border-white/10 rounded-xl p-3 pr-10 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 resize-none min-h-[80px]"
+            className="w-full bg-zinc-800 border border-white/10 rounded-xl p-3 pb-12 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500/50 resize-none min-h-[100px]"
             disabled={isGenerating}
           />
           <button
             onClick={() => handleSubmit()}
             disabled={!prompt.trim() || isGenerating}
-            className="absolute bottom-3 right-3 p-1.5 rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="absolute bottom-3 right-3 p-2 rounded-lg bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isGenerating ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

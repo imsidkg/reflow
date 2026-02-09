@@ -264,14 +264,13 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
       >
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center gap-1.5 text-xs transition-colors px-2 py-1.5 rounded-lg border backdrop-blur-md shadow-sm ${
+          className={`flex items-center gap-1.5 text-xs transition-colors px-2 py-1.5 backdrop-blur-md shadow-sm rounded-lg border ${
             isOpen
-              ? "bg-indigo-500 text-white border-indigo-400"
+              ? "bg-zinc-700 text-white border-zinc-600"
               : "bg-black/40 text-white hover:bg-black/60 border-white/10"
           }`}
         >
           <MessageSquare className="w-3 h-3" />
-          Design Chat
         </button>
       </div>
 
