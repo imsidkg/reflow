@@ -115,6 +115,7 @@ interface ShapesState {
   frameCounter: number;
   isGeneratingWorkflow: boolean;
   inspectingShapeId: string | null;
+  refiningShapeId: string | null;
 }
 
 const initialState: ShapesState = {
@@ -124,6 +125,7 @@ const initialState: ShapesState = {
   frameCounter: 0,
   isGeneratingWorkflow: false,
   inspectingShapeId: null,
+  refiningShapeId: null,
 };
 
 const DEFAULTS = { stroke: "#ffff", strokeWidth: 2 as const };
@@ -428,6 +430,9 @@ const shapesSlice = createSlice({
     setInspectingShape(state, action: PayloadAction<string | null>) {
       state.inspectingShapeId = action.payload;
     },
+    setRefiningShapeId(state, action: PayloadAction<string | null>) {
+      state.refiningShapeId = action.payload;
+    },
   },
 });
 
@@ -453,7 +458,7 @@ export const {
   loadShapes,
   setGeneratingWorkflow,
   setInspectingShape,
+  setRefiningShapeId,
 } = shapesSlice.actions;
-
 
 export default shapesSlice.reducer;

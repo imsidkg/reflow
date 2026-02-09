@@ -657,6 +657,13 @@ export const refineUI = inngest.createFunction(
         await pusherServer.trigger(`project-${projectId}`, "shape-updated", {
           ...shapesFn.entities[shapeId],
         });
+
+        // Also trigger explicit refinement completion
+        await pusherServer.trigger(`project-${projectId}`, "ui-refined", {
+          success: true,
+          shapeId,
+          ...shapesFn.entities[shapeId],
+        });
       }
     });
 

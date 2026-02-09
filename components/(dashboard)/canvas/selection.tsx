@@ -6,6 +6,7 @@ import {
   addGeneratedUI,
   setGeneratingWorkflow,
   setInspectingShape,
+  setRefiningShapeId,
 } from "@/redux/slices/shapes";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -176,12 +177,17 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isInspecting, setIsInspectingLocal] = useState(false);
 
+  // Global state for refinement loading
+  const refiningShapeId = useAppSelector(
+    (state) => state.shapes.refiningShapeId,
+  );
+  const isRefining = refiningShapeId === shape.id;
+
   const setIsInspecting = (value: boolean) => {
     setIsInspectingLocal(value);
     dispatch(setInspectingShape(value ? shape.id : null));
   };
   const [selectedElement, setSelectedElement] = useState<any>(null);
-  const [isRefining, setIsRefining] = useState(false);
   const { projectId } = useParams();
 
   // Listen for inspection events from the generated UI
@@ -199,16 +205,16 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
       "Setting up event listener for:",
       `generated-ui-selected-${shape.id}`,
     );
+    window.dispatchEvent(
+      new CustomEvent(`set-inspection-mode-${shape.id}`, {
+        detail: { isInspecting: true },
+      }),
+    );
+
     window.addEventListener(
       `generated-ui-selected-${shape.id}`,
       handleElementSelected as EventListener,
     );
-
-    // Also trigger the inspection mode on the shape itself
-    const event = new CustomEvent(`set-inspection-mode-${shape.id}`, {
-      detail: { isInspecting },
-    });
-    window.dispatchEvent(event);
 
     return () => {
       // console.log("Cleaning up event listener");
@@ -228,7 +234,9 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
   }, [isInspecting, shape.id]);
 
   const handleRefine = async (prompt: string) => {
-    setIsRefining(true);
+    // Set global loading state
+    dispatch(setRefiningShapeId(shape.id));
+
     try {
       const res = await fetch(`/api/project/${projectId}/refine-ui`, {
         method: "POST",
@@ -242,12 +250,13 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
 
       if (!res.ok) {
         console.error("Refinement failed");
+        dispatch(setRefiningShapeId(null)); // Reset on error
       }
     } catch (e) {
       console.error("Refinement error", e);
-    } finally {
-      setIsRefining(false);
+      dispatch(setRefiningShapeId(null)); // Reset on error
     }
+    // Do NOT reset on success, wait for Pusher event
   };
 
   return (

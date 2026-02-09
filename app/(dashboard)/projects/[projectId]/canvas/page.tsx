@@ -35,6 +35,7 @@ import {
   clearAll,
   addGeneratedUI,
   setGeneratingWorkflow,
+  setRefiningShapeId,
 } from "@/redux/slices/shapes";
 import {
   pushToHistory,
@@ -120,6 +121,19 @@ export default function CanvasPage() {
     channel.bind("workflow-complete", (data: any) => {
       console.log("Workflow generation complete:", data);
       dispatch(setGeneratingWorkflow(false));
+    });
+
+    channel.bind("shape-updated", (data: any) => {
+      console.log("Realtime update received (shape-updated):", data);
+      dispatch(updateShape({ id: data.id, patch: data }));
+    });
+
+    channel.bind("ui-refined", (data: any) => {
+      console.log("Realtime update received (ui-refined):", data);
+      if (data.success) {
+        dispatch(updateShape({ id: data.shapeId, patch: data }));
+        dispatch(setRefiningShapeId(null));
+      }
     });
 
     // Cleanup
