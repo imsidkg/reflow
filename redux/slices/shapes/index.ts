@@ -114,6 +114,7 @@ interface ShapesState {
   selected: SelectionMap;
   frameCounter: number;
   isGeneratingWorkflow: boolean;
+  inspectingShapeId: string | null;
 }
 
 const initialState: ShapesState = {
@@ -122,6 +123,7 @@ const initialState: ShapesState = {
   selected: {},
   frameCounter: 0,
   isGeneratingWorkflow: false,
+  inspectingShapeId: null,
 };
 
 const DEFAULTS = { stroke: "#ffff", strokeWidth: 2 as const };
@@ -423,6 +425,9 @@ const shapesSlice = createSlice({
     setGeneratingWorkflow(state, action: PayloadAction<boolean>) {
       state.isGeneratingWorkflow = action.payload;
     },
+    setInspectingShape(state, action: PayloadAction<string | null>) {
+      state.inspectingShapeId = action.payload;
+    },
   },
 });
 
@@ -447,6 +452,8 @@ export const {
   loadProject,
   loadShapes,
   setGeneratingWorkflow,
+  setInspectingShape,
 } = shapesSlice.actions;
+
 
 export default shapesSlice.reducer;

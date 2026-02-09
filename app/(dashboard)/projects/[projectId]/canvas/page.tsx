@@ -326,6 +326,20 @@ export default function CanvasPage() {
 
     if (currentTool === "select") {
       const hitId = hitTest(worldPoint);
+
+      // If we clicked on the shape being inspected, don't start dragging
+      // Let the click event propagate to the GeneratedUI component
+      console.log(
+        "Canvas PointerDown - Hit:",
+        hitId,
+        "Inspecting:",
+        shapesState.inspectingShapeId,
+      );
+      if (hitId && shapesState.inspectingShapeId === hitId) {
+        console.log("Skipping canvas drag for inspected shape");
+        return;
+      }
+
       if (hitId) {
         if (!selected[hitId]) {
           dispatch(clearSelection());
