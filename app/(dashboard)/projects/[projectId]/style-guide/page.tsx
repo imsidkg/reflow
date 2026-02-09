@@ -368,7 +368,7 @@ export default function StyleGuidePage() {
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading || isGenerating}
-                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-sans font-medium border border-white/20 transition-all disabled:opacity-50 backdrop-blur-sm whitespace-nowrap"
+                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium border border-white/20 transition-all disabled:opacity-50 backdrop-blur-sm whitespace-nowrap"
                       >
                         {isUploading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -382,7 +382,7 @@ export default function StyleGuidePage() {
                           generateStyleGuide(() => setActiveTab("colours"))
                         }
                         disabled={images.length === 0 || isGenerating}
-                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 text-sm font-sans font-medium transition-all disabled:opacity-50 whitespace-nowrap"
+                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 text-sm font-medium transition-all disabled:opacity-50 whitespace-nowrap"
                       >
                         {isGenerating ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
