@@ -5,6 +5,7 @@ import {
   updateShape,
   addGeneratedUI,
   setGeneratingWorkflow,
+  setInspectingShape,
 } from "@/redux/slices/shapes";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -131,6 +132,7 @@ export const SelectionOverlay = ({
           width: bounds.w + 4,
           height: bounds.h + 4,
           borderRadius: shape.type === "frame" ? "10px" : "4px",
+          pointerEvents: "none",
         }}
       />
       {showGenerate && (
@@ -170,8 +172,14 @@ import { DesignChat } from "./design-chat";
 import { MessageSquare } from "lucide-react";
 
 function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
+  const dispatch = useAppDispatch();
   const [isOpen, setIsOpen] = useState(false);
-  const [isInspecting, setIsInspecting] = useState(false);
+  const [isInspecting, setIsInspectingLocal] = useState(false);
+
+  const setIsInspecting = (value: boolean) => {
+    setIsInspectingLocal(value);
+    dispatch(setInspectingShape(value ? shape.id : null));
+  };
   const [selectedElement, setSelectedElement] = useState<any>(null);
   const [isRefining, setIsRefining] = useState(false);
   const { projectId } = useParams();
@@ -181,11 +189,16 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
     if (!isInspecting) return;
 
     const handleElementSelected = (e: CustomEvent) => {
+      console.log("Element selected (DesignChatWrapper):", e.detail);
       setSelectedElement(e.detail);
       setIsOpen(true); // Open chat when element is clicked
       setIsInspecting(false); // Turn off inspection mode
     };
 
+    console.log(
+      "Setting up event listener for:",
+      `generated-ui-selected-${shape.id}`,
+    );
     window.addEventListener(
       `generated-ui-selected-${shape.id}`,
       handleElementSelected as EventListener,
@@ -198,6 +211,7 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
     window.dispatchEvent(event);
 
     return () => {
+      // console.log("Cleaning up event listener");
       window.removeEventListener(
         `generated-ui-selected-${shape.id}`,
         handleElementSelected as EventListener,

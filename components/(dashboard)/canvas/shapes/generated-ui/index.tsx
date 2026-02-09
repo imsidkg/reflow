@@ -12,6 +12,10 @@ export const GeneratedUI = ({ shape }: { shape: GeneratedUIShape }) => {
   // Listen for inspection mode toggle from the selection overlay
   useEffect(() => {
     const handleToggle = (e: CustomEvent) => {
+      console.log(
+        "GeneratedUI received inspection toggle:",
+        e.detail.isInspecting,
+      );
       setIsInspecting(e.detail.isInspecting);
       if (!e.detail.isInspecting) {
         setHoveredElement(null);
@@ -30,21 +34,77 @@ export const GeneratedUI = ({ shape }: { shape: GeneratedUIShape }) => {
     };
   }, [shape.id]);
 
+  // Force pointer-events on all elements when inspecting to ensure selection works
+  useEffect(() => {
+    if (!isInspecting || !containerRef.current) return;
+
+    try {
+      const allElements = containerRef.current.querySelectorAll("*");
+      allElements.forEach((el) => {
+        (el as HTMLElement).style.setProperty(
+          "pointer-events",
+          "auto",
+          "important",
+        );
+        (el as HTMLElement).style.setProperty(
+          "cursor",
+          "crosshair",
+          "important",
+        );
+      });
+      console.log(`Enforced pointer-events on ${allElements.length} elements`);
+    } catch (e) {
+      console.error("Failed to enforce pointer events:", e);
+    }
+  }, [isInspecting, shape.uiSpecData]);
+
   // Handle interaction with the generated content
   useEffect(() => {
+    console.log(
+      "GeneratedUI Interaction Effect Running. isInspecting:",
+      isInspecting,
+    );
     const container = containerRef.current;
     if (!container || !isInspecting) return;
 
-    const handleMouseOver = (e: MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent) => {
       e.stopPropagation();
-      const target = e.target as HTMLElement;
-      // Don't highlight the container itself
-      if (target === container || container.contains(target)) {
-        setHoveredElement(target);
+
+      const x = e.clientX;
+      const y = e.clientY;
+
+      const elements = document.elementsFromPoint(x, y);
+
+      const candidates = elements
+        .filter((el) => {
+          return (
+            container.contains(el) &&
+            el !== container &&
+            !el.classList.contains("generated-content-wrapper")
+          );
+        })
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            el: el as HTMLElement,
+            area: rect.width * rect.height,
+          };
+        });
+
+      if (candidates.length === 0) {
+        setHoveredElement(null);
+        return;
+      }
+
+      candidates.sort((a, b) => a.area - b.area);
+      const bestCandidate = candidates[0].el;
+
+      if (bestCandidate !== hoveredElement) {
+        setHoveredElement(bestCandidate);
       }
     };
 
-    const handleMouseOut = (e: MouseEvent) => {
+    const handleMouseLeave = (e: MouseEvent) => {
       e.stopPropagation();
       setHoveredElement(null);
     };
@@ -52,19 +112,50 @@ export const GeneratedUI = ({ shape }: { shape: GeneratedUIShape }) => {
     const handleClick = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const target = e.target as HTMLElement;
+
+      const x = e.clientX;
+      const y = e.clientY;
+
+      // Get all elements at the click position
+      const elements = document.elementsFromPoint(x, y);
+
+      // Filter elements that belong to this generated UI container
+      // and exclude the container/wrapper themselves to find specific targets
+      const candidates = elements
+        .filter((el) => {
+          return (
+            container.contains(el) &&
+            el !== container &&
+            !el.classList.contains("generated-content-wrapper")
+          );
+        })
+        .map((el) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            el: el as HTMLElement,
+            area: rect.width * rect.height,
+            rect,
+          };
+        });
+
+      if (candidates.length === 0) return;
+
+      // Sort by area (smallest first) to prioritize specific elements (buttons, inputs)
+      // over their containers or overlays.
+      candidates.sort((a, b) => a.area - b.area);
+
+      // Select the smallest element
+      const bestCandidate = candidates[0].el;
 
       // Create a simplified representation of the element
       const selectedData = {
-        tagName: target.tagName,
-        text: target.innerText.slice(0, 50),
-        html: target.outerHTML,
-        className: target.className,
-        // Calculate a simple path if possible, or just rely on context
-        xpath: getXPath(target, container),
+        tagName: bestCandidate.tagName,
+        text: bestCandidate.innerText?.slice(0, 50) || "",
+        html: bestCandidate.outerHTML,
+        className: bestCandidate.className,
+        xpath: getXPath(bestCandidate, container),
       };
 
-      // Dispatch event to parent
       const event = new CustomEvent(`generated-ui-selected-${shape.id}`, {
         detail: selectedData,
       });
@@ -74,13 +165,22 @@ export const GeneratedUI = ({ shape }: { shape: GeneratedUIShape }) => {
       setHoveredElement(null);
     };
 
-    container.addEventListener("mouseover", handleMouseOver);
-    container.addEventListener("mouseout", handleMouseOut);
-    container.addEventListener("click", handleClick, true); // Capture phase to prevent links
+    const handlePointerDown = (e: PointerEvent) => {
+      // Capture pointer down to stop canvas drag
+      e.stopPropagation();
+      console.log("GeneratedUI PointerDown (Bubble)", e.target);
+    };
+
+    // Use interaction events
+    container.addEventListener("pointerdown", handlePointerDown);
+    container.addEventListener("mousemove", handleMouseMove);
+    container.addEventListener("mouseleave", handleMouseLeave);
+    container.addEventListener("click", handleClick, true);
 
     return () => {
-      container.removeEventListener("mouseover", handleMouseOver);
-      container.removeEventListener("mouseout", handleMouseOut);
+      container.removeEventListener("pointerdown", handlePointerDown);
+      container.removeEventListener("mousemove", handleMouseMove);
+      container.removeEventListener("mouseleave", handleMouseLeave);
       container.removeEventListener("click", handleClick, true);
     };
   }, [isInspecting, shape.id]);
@@ -91,19 +191,28 @@ export const GeneratedUI = ({ shape }: { shape: GeneratedUIShape }) => {
     <>
       <div
         ref={containerRef}
-        className="absolute overflow-hidden bg-white shadow-xl isolate"
+        className={`absolute overflow-hidden bg-white shadow-xl ${isInspecting ? "cursor-crosshair z-[100]" : "z-[1]"}`}
         style={{
           left: shape.x,
           top: shape.y,
           width: shape.w,
           height: shape.h,
           borderRadius: "12px",
-          pointerEvents: isInspecting ? "auto" : undefined, // Ensure clicks pass through when not inspecting? Actually usually we want interaction.
-          // But when inspecting, we definitely capture everything.
+          pointerEvents: "auto",
         }}
       >
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            .generated-content-wrapper * {
+              pointer-events: ${isInspecting ? "auto !important" : "auto"};
+              cursor: ${isInspecting ? "crosshair !important" : "auto"};
+            }
+          `,
+          }}
+        />
         <div
-          className="w-full h-full overflow-auto"
+          className="w-full h-full overflow-auto generated-content-wrapper"
           dangerouslySetInnerHTML={{
             __html: DOMPurify.sanitize(shape.uiSpecData),
           }}

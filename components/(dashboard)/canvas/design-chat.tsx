@@ -48,10 +48,15 @@ export function DesignChat({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
+  };
+
+  const preventPropagation = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
   };
 
   return (
@@ -140,6 +145,8 @@ export function DesignChat({
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
+            onKeyUp={preventPropagation}
+            onKeyPress={preventPropagation}
             placeholder={
               selectedElement
                 ? "How should I change this element?"
