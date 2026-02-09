@@ -121,7 +121,7 @@ export const SelectionOverlay = ({
     }
   };
 
-  const showGenerate = shape.type === "frame" || shape.type === "rect";
+  const showGenerate = shape.type === "frame";
 
   return (
     <>
