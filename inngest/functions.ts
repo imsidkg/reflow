@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { inngest } from "./client";
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import { userPrompts } from "@/lib/agents/prompts";
+import { userPrompts, prompts } from "@/lib/agents/prompts";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import { extractKeyFromUrl } from "@/lib/s3-uploads";
 import { generativeUiAgent, workflowAgent } from "@/lib/agents";
@@ -414,6 +414,7 @@ Ignore the image URLs in the prompt text below as I have provided the actual ima
             // Create a fresh model instance for each request to avoid shared state issues
             const model = genAI.getGenerativeModel({
               model: "gemini-2.0-flash",
+              systemInstruction: prompts.generativeUi.system,
               generationConfig: {
                 responseMimeType: "text/plain",
               },
@@ -575,6 +576,7 @@ export const refineUI = inngest.createFunction(
     const result = await step.run("generate-refinement", async () => {
       const model = genAI.getGenerativeModel({
         model: "gemini-2.0-flash",
+        systemInstruction: prompts.generativeUi.system,
         generationConfig: {
           responseMimeType: "text/plain",
         },
