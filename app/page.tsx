@@ -215,7 +215,7 @@ export default function Home() {
             </div>
           </div>
           <div className="lg:col-span-7">
-            <div className="rounded-xl overflow-hidden border border-border-dark shadow-2xl bg-[#0a0a0a]">
+            <div className="rounded-xl overflow-hidden border border-border-dark shadow-2xl bg-[#0a0a0a] transition-transform duration-500 hover:scale-[1.02]">
               {/* Window Header */}
               <div className="bg-neutral-dark px-4 py-3 border-b border-border-dark flex items-center justify-between">
                 <div className="flex gap-1.5">
