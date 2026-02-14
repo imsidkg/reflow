@@ -26,7 +26,7 @@ export default function Home() {
                 />
               </div>
             </Link>
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-400">
+            {/* <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-400">
               <Link href="#" className="hover:text-white transition-colors">
                 Features
               </Link>
@@ -39,7 +39,7 @@ export default function Home() {
               <Link href="#" className="hover:text-white transition-colors">
                 Docs
               </Link>
-            </div>
+            </div> */}
           </div>
           <div className="flex items-center gap-4">
             <Link
