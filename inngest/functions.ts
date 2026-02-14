@@ -370,7 +370,7 @@ export const generateUI = inngest.createFunction(
       ).then((parts) => parts.filter((p) => p !== null));
     });
 
-    // 3. Execute Generation in Parallel
+    // 3. Execute Generation: Step 1 first (as design reference), then rest in parallel
     const steps = workflowPlan.steps || [];
 
     const generatedIds = await step.run(
@@ -378,22 +378,42 @@ export const generateUI = inngest.createFunction(
       async () => {
         console.time("Total Parallel Generation Time");
 
-        // A. Start all AI allocations in parallel
-        const aiPromises = steps.map(async (workflowStep: any, i: number) => {
+        const basePrompt = userPrompts.generateUi(
+          [{ swatches: colors || [] }],
+          [{ styles: typography || [] }],
+        );
+
+        // Helper: generate a single screen
+        const generateScreen = async (
+          workflowStep: any,
+          i: number,
+          mainPageHtml?: string,
+        ) => {
           console.log(
-            `[Parallel] Starting AI generation for Step ${i + 1}: ${workflowStep.title}`,
+            `[Generate] Starting AI generation for Step ${i + 1}: ${workflowStep.title}`,
           );
           console.time(`AI Gen Step ${i + 1}`);
 
-          const basePrompt = userPrompts.generateUi(
-            [{ swatches: colors || [] }],
-            [{ styles: typography || [] }],
-          );
+          const designReference =
+            i === 0
+              ? "This IS the main page — establish the visual foundation."
+              : mainPageHtml
+                ? `${mainPageHtml.substring(0, 2000)}...`
+                : "No reference available.";
 
           const fullPrompt = `${basePrompt}
 
 Wireframe Data (Context):
 ${JSON.stringify(sourceWireframeData)}
+
+MAIN PAGE REFERENCE (for design consistency):
+${designReference}
+
+DESIGN CONSISTENCY REQUIREMENTS:
+1. Use the EXACT same visual style, color scheme, and typography as the main page
+2. Maintain identical component styling (buttons, cards, forms, navigation)
+3. Keep the same overall layout patterns and spacing
+4. The page should feel like it belongs to the same application
 
 TASK:
 Generate the screen for: "${workflowStep.title}".
@@ -411,7 +431,6 @@ Ignore the image URLs in the prompt text below as I have provided the actual ima
 `;
 
           try {
-            // Create a fresh model instance for each request to avoid shared state issues
             const model = genAI.getGenerativeModel({
               model: "gemini-2.0-flash",
               systemInstruction: prompts.generativeUi.system,
@@ -441,10 +460,29 @@ Ignore the image URLs in the prompt text below as I have provided the actual ima
             console.timeEnd(`AI Gen Step ${i + 1}`);
             return { index: i, workflowStep, success: false, error };
           }
-        });
+        };
 
-        // B. Wait for ALL AI to finish
-        const results = await Promise.all(aiPromises);
+        // A. Generate Step 1 first to establish the design foundation
+        const firstResult =
+          steps.length > 0 ? await generateScreen(steps[0], 0) : null;
+
+        const mainPageHtml = firstResult?.success
+          ? (firstResult as any).html
+          : undefined;
+
+        // B. Generate remaining steps in parallel, using Step 1's HTML as design reference
+        const remainingPromises = steps
+          .slice(1)
+          .map((workflowStep: any, i: number) =>
+            generateScreen(workflowStep, i + 1, mainPageHtml),
+          );
+
+        const remainingResults = await Promise.all(remainingPromises);
+
+        // C. Combine all results
+        const results = firstResult
+          ? [firstResult, ...remainingResults]
+          : remainingResults;
         console.timeEnd("Total Parallel Generation Time");
 
         const validResults = results.filter((r) => r.success);
@@ -618,10 +656,15 @@ export const refineUI = inngest.createFunction(
       USER REFINEMENT REQUEST: "${refinementPrompt}"
 
       TASK:
-      1. Modify the HTML to satisfy the user's request.
-      2. Ensure you maintain the existing style system and only change what is requested.
-      3. Return the FULL updated HTML string.
-      4. Do NOT output markdown ticks (Example: no \`\`\`html). Just the raw HTML code.
+      1. MODIFY the provided HTML above — do NOT create a completely new page.
+      2. Apply the user's requested changes to the existing design.
+      3. Keep all existing IDs and semantic structure intact.
+      4. Preserve responsive design and accessibility features.
+      5. Maintain the existing layout structure and component hierarchy.
+      6. Only change what is specifically requested — preserve everything else.
+      7. Maintain the existing .c-* color class system and style guide tokens.
+      8. Return the FULL updated HTML string.
+      9. Do NOT output markdown ticks (Example: no \`\`\`html). Just the raw HTML code.
       `;
 
       const result = await model.generateContent(prompt);
