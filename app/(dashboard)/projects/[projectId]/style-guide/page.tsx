@@ -382,7 +382,7 @@ export default function StyleGuidePage() {
                           generateStyleGuide(() => setActiveTab("colours"))
                         }
                         disabled={images.length === 0 || isGenerating}
-                        className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 text-sm font-medium transition-all disabled:opacity-50 whitespace-nowrap"
+                        className="inline-flex items-center cursor-pointer justify-center gap-2 px-3 py-2 rounded-full bg-white hover:bg-zinc-100 text-zinc-900 text-sm font-medium transition-all disabled:opacity-50 whitespace-nowrap"
                       >
                         {isGenerating ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

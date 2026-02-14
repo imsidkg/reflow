@@ -68,7 +68,7 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 grid grid-cols-3 p-4">
       <div className="flex items-start">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/projects" className="flex items-center gap-2">
           <LogoIcon />
         </Link>
       </div>
