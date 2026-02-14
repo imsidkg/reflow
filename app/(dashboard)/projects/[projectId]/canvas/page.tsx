@@ -35,6 +35,7 @@ import {
   clearAll,
   addGeneratedUI,
   setGeneratingWorkflow,
+  setRefiningShapeId,
 } from "@/redux/slices/shapes";
 import {
   pushToHistory,
@@ -120,6 +121,19 @@ export default function CanvasPage() {
     channel.bind("workflow-complete", (data: any) => {
       console.log("Workflow generation complete:", data);
       dispatch(setGeneratingWorkflow(false));
+    });
+
+    channel.bind("shape-updated", (data: any) => {
+      console.log("Realtime update received (shape-updated):", data);
+      dispatch(updateShape({ id: data.id, patch: data }));
+    });
+
+    channel.bind("ui-refined", (data: any) => {
+      console.log("Realtime update received (ui-refined):", data);
+      if (data.success) {
+        dispatch(updateShape({ id: data.shapeId, patch: data }));
+        dispatch(setRefiningShapeId(null));
+      }
     });
 
     // Cleanup
@@ -683,30 +697,16 @@ export default function CanvasPage() {
 
       <InspirationBoard />
 
-      <div className="fixed bottom-6 left-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-sm backdrop-blur-sm">
+      <div className="fixed top-4 right-20 flex items-center justify-center h-10 w-10 rounded-full bg-white/[0.08] border border-white/[0.12] backdrop-blur-xl z-50">
         {saveStatus === "saving" && (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
-            <span className="text-zinc-400">Saving...</span>
-          </>
+          <Loader2 className="h-5 w-5 animate-spin text-blue-400" />
         )}
-        {saveStatus === "saved" && (
-          <>
-            <Check className="h-4 w-4 text-green-400" />
-            <span className="text-green-400">Saved</span>
-          </>
-        )}
+        {saveStatus === "saved" && <Check className="h-5 w-5 text-green-400" />}
         {saveStatus === "error" && (
-          <>
-            <CloudOff className="h-4 w-4 text-red-400" />
-            <span className="text-red-400">Save failed</span>
-          </>
+          <CloudOff className="h-5 w-5 text-red-400" />
         )}
         {saveStatus === "idle" && (
-          <>
-            <Cloud className="h-4 w-4 text-zinc-500" />
-            <span className="text-zinc-500">Auto-save on</span>
-          </>
+          <Cloud className="h-5 w-5 text-zinc-500 animate-in fade-in zoom-in duration-500" />
         )}
       </div>
 
