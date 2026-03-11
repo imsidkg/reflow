@@ -3,7 +3,6 @@ import CopyPlugin from "copy-webpack-plugin";
 import path from "path";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   serverExternalPackages: ["@prisma/client"],
   webpack: (config, { isServer }) => {
     if (isServer) {

@@ -134,7 +134,6 @@ export function InspirationBoard() {
 
   return (
     <div className="absolute top-1/2 -translate-y-1/2 left-5 w-80 rounded-3xl bg-black/60 backdrop-blur-2xl border border-white/10 shadow-2xl overflow-hidden z-50 flex flex-col transition-all duration-300 animate-in slide-in-from-left-10 fade-in">
-      {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-2">
           <ImageIcon className="w-4 h-4 text-zinc-400" />
@@ -148,7 +147,6 @@ export function InspirationBoard() {
         </button>
       </div>
 
-      {/* Upload Area */}
       <div
         className="m-4 mt-2 p-6 rounded-xl border border-dashed border-white/10 bg-white/5 flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/10 hover:border-white/20"
         onDragOver={(e) => e.preventDefault()}
@@ -178,7 +176,6 @@ export function InspirationBoard() {
         />
       </div>
 
-      {/* List */}
       <div className="px-4 pb-2 flex items-center justify-between">
         <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
           Uploaded Images ({images.length})
@@ -217,7 +214,6 @@ export function InspirationBoard() {
         </button>
       </div>
 
-      {/* Footer Area (Just basic padding) */}
       <div className="p-2"></div>
     </div>
   );

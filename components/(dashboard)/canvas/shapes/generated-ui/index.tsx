@@ -218,7 +218,6 @@ export const GeneratedUI = ({ shape }: { shape: GeneratedUIShape }) => {
           }}
         />
 
-        {/* Highlight Overlay */}
         {isInspecting && hoveredElement && containerRef.current && (
           <HighlightOverlay
             target={hoveredElement}
@@ -226,12 +225,10 @@ export const GeneratedUI = ({ shape }: { shape: GeneratedUIShape }) => {
           />
         )}
 
-        {/* Inspection Mode Indicator */}
         {isInspecting && (
           <div className="absolute inset-0 pointer-events-none ring-2 ring-blue-500 ring-inset z-50 rounded-[12px] bg-blue-500/10" />
         )}
 
-        {/* Helper overlay to indicate it's generated */}
         {!isInspecting && (
           <div className="absolute top-2 right-2 px-2 py-1 bg-black/50 backdrop-blur-md rounded text-[10px] text-white font-medium z-10 pointer-events-none">
             AI Generated

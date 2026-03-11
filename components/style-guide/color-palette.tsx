@@ -35,7 +35,6 @@ export function ColorPalette({ colors }: ColorPaletteProps) {
           key={index}
           className="group flex items-start gap-4"
         >
-          {/* Small Color Picture */}
           <div
             className="h-14 w-14 rounded-2xl shadow-sm border border-white/5 shrink-0 group-hover:scale-110 transition-transform duration-300"
             style={{ backgroundColor: color.hexColor }}

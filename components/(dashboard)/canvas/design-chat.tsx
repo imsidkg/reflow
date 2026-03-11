@@ -61,7 +61,6 @@ export function DesignChat({
 
   return (
     <div className="absolute top-10 right-[-340px] w-80 rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-left-5 fade-in duration-200 z-50">
-      {/* Header */}
       <div className="p-3 border-b border-white/10 flex items-center justify-between bg-white/5">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-zinc-800 text-zinc-400">
@@ -79,9 +78,7 @@ export function DesignChat({
         </button>
       </div>
 
-      {/* Content Area */}
       <div className="p-4 flex flex-col gap-4">
-        {/* Inspection Toggle */}
         <button
           onClick={() => setIsInspecting(!isInspecting)}
           className={cn(
@@ -113,7 +110,6 @@ export function DesignChat({
           </div>
         </button>
 
-        {/* Selected Context */}
         {selectedElement && (
           <div className="p-3 rounded-lg bg-zinc-800 border border-white/10 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between mb-1">
@@ -138,7 +134,6 @@ export function DesignChat({
           </div>
         )}
 
-        {/* Chat Input */}
         <div className="relative">
           <textarea
             ref={inputRef}

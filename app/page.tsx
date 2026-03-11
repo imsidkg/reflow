@@ -11,7 +11,6 @@ export default function Home() {
         rel="stylesheet"
       />
 
-      {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 border-b border-border-dark bg-black/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
@@ -26,20 +25,6 @@ export default function Home() {
                 />
               </div>
             </Link>
-            {/* <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-400">
-              <Link href="#" className="hover:text-white transition-colors">
-                Features
-              </Link>
-              <Link href="#" className="hover:text-white transition-colors">
-                Showcase
-              </Link>
-              <Link href="#" className="hover:text-white transition-colors">
-                Pricing
-              </Link>
-              <Link href="#" className="hover:text-white transition-colors">
-                Docs
-              </Link>
-            </div> */}
           </div>
           <div className="flex items-center gap-4">
             <Link
@@ -58,7 +43,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">
         <div className="absolute inset-0 grid-pattern opacity-40 pointer-events-none"></div>
         <div className="max-w-5xl mx-auto px-6 text-center relative z-10">
@@ -92,7 +76,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Wireframe Transformation Section */}
       <section className="py-24 border-y border-border-dark bg-black relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16">
@@ -106,7 +89,6 @@ export default function Home() {
             </p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-            {/* Input Side */}
             <div className="gradient-border rounded-xl p-6 bg-neutral-dark/50 flex flex-col gap-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
@@ -120,7 +102,6 @@ export default function Home() {
                 </span>
               </div>
               <div className="flex-grow min-h-[400px] rounded-lg bg-black/50 border border-dashed border-gray-800 flex items-center justify-center overflow-hidden">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   className="w-full h-full object-cover grayscale opacity-50 contrast-125 sketch-animate-draw"
                   alt="A hand-drawn wireframe sketch on paper"
@@ -128,7 +109,7 @@ export default function Home() {
                 />
               </div>
             </div>
-            {/* Output Side */}
+
             <div className="gradient-border rounded-xl p-6 bg-neutral-dark/50 flex flex-col gap-4 relative">
               <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 z-20 size-10 rounded-full bg-gray-600 flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.2)]">
                 <span className="material-symbols-outlined text-white">
@@ -177,7 +158,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* AI Chat Assistant Section */}
       <section className="py-24 bg-background-dark relative">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           <div className="lg:col-span-5">
@@ -216,7 +196,6 @@ export default function Home() {
           </div>
           <div className="lg:col-span-7">
             <div className="rounded-xl overflow-hidden border border-border-dark shadow-2xl bg-[#0a0a0a] transition-transform duration-500 hover:scale-[1.02]">
-              {/* Window Header */}
               <div className="bg-neutral-dark px-4 py-3 border-b border-border-dark flex items-center justify-between">
                 <div className="flex gap-1.5">
                   <div className="size-3 rounded-full bg-red-500/20"></div>
@@ -228,9 +207,8 @@ export default function Home() {
                 </div>
                 <div className="size-4"></div>
               </div>
-              {/* Chat & Canvas */}
+
               <div className="flex h-[500px]">
-                {/* Sidebar Chat */}
                 <div className="w-1/3 border-r border-border-dark bg-[#0d0d0d] flex flex-col">
                   <div className="flex-grow p-4 space-y-4 overflow-y-auto">
                     <div className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -258,7 +236,7 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                {/* Canvas View */}
+
                 <div className="flex-grow bg-black p-6 flex items-center justify-center relative">
                   <div className="absolute inset-0 grid-pattern opacity-10"></div>
                   <div className="w-full max-w-sm border border-white/10 rounded-lg shadow-2xl bg-black relative overflow-hidden group">
@@ -287,7 +265,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Brand Identity Section */}
       <section className="py-24 bg-neutral-dark/30">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
@@ -300,7 +277,6 @@ export default function Home() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Color Discovery */}
             <div className="gradient-border p-8 rounded-2xl bg-black feature-card">
               <h3 className="font-display text-xl font-bold mb-6 flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -337,7 +313,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {/* Typography Discovery */}
+
             <div className="gradient-border p-8 rounded-2xl bg-black feature-card">
               <h3 className="font-display text-xl font-bold mb-6 flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -378,7 +354,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {/* Bento Elements */}
+
             <div className="grid grid-rows-2 gap-6">
               <div className="gradient-border p-6 rounded-2xl bg-black flex flex-col justify-between feature-card">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -411,7 +387,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Final CTA */}
       <section className="py-32 relative overflow-hidden">
         <div className="absolute inset-0 z-0">
           <SeamlessBackground />
@@ -436,7 +411,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="py-12 border-t border-border-dark relative z-10 bg-background-dark">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
           <Link href="#" className="flex items-center gap-2 group">

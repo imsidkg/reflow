@@ -217,7 +217,6 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
     );
 
     return () => {
-      // console.log("Cleaning up event listener");
       window.removeEventListener(
         `generated-ui-selected-${shape.id}`,
         handleElementSelected as EventListener,
@@ -261,7 +260,6 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
 
   return (
     <>
-      {/* Trigger Button */}
       <div
         className="absolute flex items-center justify-end pointer-events-auto"
         onPointerDown={(e) => e.stopPropagation()}
@@ -283,7 +281,6 @@ function DesignChatWrapper({ shape, bounds }: { shape: any; bounds: any }) {
         </button>
       </div>
 
-      {/* Chat Interface */}
       {isOpen && (
         <div
           className="absolute pointer-events-auto"
